@@ -8,9 +8,9 @@ import (
 )
 
 var urls = make(map[string]string, 100)
-var ErrUrlNotFound = errors.New("url not found")
+var ErrURLNotFound = errors.New("url not found")
 
-func AddUrl(u string) (string, error) {
+func AddURL(u string) (string, error) {
 	h, err := randomHex()
 
 	if err != nil {
@@ -22,11 +22,11 @@ func AddUrl(u string) (string, error) {
 	return h, nil
 }
 
-func FetchUrl(h string) (string, error) {
+func FetchURL(h string) (string, error) {
 	u, ok := urls[h]
 
 	if !ok {
-		return "", fmt.Errorf("%w for hash %s", ErrUrlNotFound, h)
+		return "", fmt.Errorf("%w for hash %s", ErrURLNotFound, h)
 	}
 
 	return u, nil

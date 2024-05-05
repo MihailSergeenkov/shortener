@@ -21,7 +21,7 @@ func AddHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h, err := storage.AddUrl(string(body))
+	h, err := storage.AddURL(string(body))
 
 	if err != nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)

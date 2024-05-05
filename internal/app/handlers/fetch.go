@@ -23,10 +23,10 @@ func FetchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u, err := storage.FetchUrl(strings.TrimLeft(key, "/"))
+	u, err := storage.FetchURL(strings.TrimLeft(key, "/"))
 
 	if err != nil {
-		if errors.Is(err, storage.ErrUrlNotFound) {
+		if errors.Is(err, storage.ErrURLNotFound) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}

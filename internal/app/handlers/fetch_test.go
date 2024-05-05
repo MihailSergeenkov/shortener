@@ -11,7 +11,7 @@ import (
 
 func TestFetchHandler(t *testing.T) {
 	url := "https://ya.ru/some"
-	h, _ := storage.AddUrl(url)
+	h, _ := storage.AddURL(url)
 
 	type request struct {
 		method string
