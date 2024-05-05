@@ -52,11 +52,11 @@ func TestAddHandler(t *testing.T) {
 			AddHandler(w, request)
 
 			res := w.Result()
+			defer res.Body.Close()
 
 			assert.Equal(t, test.want.code, res.StatusCode)
 
 			if test.want.code == 201 {
-				defer res.Body.Close()
 				resBody, err := io.ReadAll(res.Body)
 
 				require.NoError(t, err)
