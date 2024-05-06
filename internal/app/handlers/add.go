@@ -9,11 +9,6 @@ import (
 )
 
 func AddHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
 
 	if err != nil {

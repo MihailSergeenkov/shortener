@@ -34,16 +34,6 @@ func TestAddHandler(t *testing.T) {
 				code: 201,
 			},
 		},
-		{
-			name: "when does not Post method",
-			request: request{
-				method: http.MethodGet,
-				body:   "https://ya.ru/some",
-			},
-			want: want{
-				code: 400,
-			},
-		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

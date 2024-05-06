@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/handlers"
+	"github.com/go-chi/chi/v5"
 )
 
 func main() {
@@ -16,12 +17,15 @@ func main() {
 }
 
 func run() error {
-	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", handlers.AddHandler)
-	mux.HandleFunc("/{hash}", handlers.FetchHandler)
+	r := chi.NewRouter()
 
-	if err := http.ListenAndServe(":8080", mux); err != nil {
+	r.Route("/", func(r chi.Router) {
+		r.Post("/", handlers.AddHandler)
+		r.Get("/{hash}", handlers.FetchHandler)
+	})
+
+	if err := http.ListenAndServe(":8080", r); err != nil {
 		if !errors.Is(err, http.ErrServerClosed) {
 			return fmt.Errorf("HTTP server has encoutenred an error: %w", err)
 		}

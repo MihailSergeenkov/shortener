@@ -39,17 +39,6 @@ func TestFetchHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "when does not Get method",
-			request: request{
-				method: http.MethodPost,
-				path:   "/" + h,
-			},
-			want: want{
-				code: 400,
-				url:  "",
-			},
-		},
-		{
 			name: "when url not found",
 			request: request{
 				method: http.MethodGet,

@@ -10,11 +10,6 @@ import (
 )
 
 func FetchHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
 	re := regexp.MustCompile(`^/\w{8}$`)
 	key := re.FindString(r.URL.Path)
 
