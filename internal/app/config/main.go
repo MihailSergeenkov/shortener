@@ -2,12 +2,13 @@ package config
 
 import (
 	"flag"
-	"os"
+
+	"github.com/caarlos0/env/v6"
 )
 
 type Settings struct {
-	RunAddr string
-	BaseURL string
+	RunAddr string `env:"SERVER_ADDRESS"`
+	BaseURL string `env:"BASE_URL"`
 }
 
 var Params Settings
@@ -18,11 +19,5 @@ func ParseFlags() {
 
 	flag.Parse()
 
-	if envRunAddr := os.Getenv("SERVER_ADDRESS"); envRunAddr != "" {
-		Params.RunAddr = envRunAddr
-	}
-
-	if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
-		Params.BaseURL = envBaseURL
-	}
+	env.Parse(&Params)
 }
