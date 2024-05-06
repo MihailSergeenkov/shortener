@@ -24,7 +24,7 @@ func AddHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url := fmt.Sprintf(`%s/%s`, config.Params.UAddr, h)
+	url := fmt.Sprintf(`%s/%s`, config.Params.BaseUrl, h)
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(url))

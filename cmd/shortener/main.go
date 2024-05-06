@@ -19,7 +19,7 @@ func main() {
 
 func run() error {
 	config.ParseFlags()
-	fmt.Println("Running server on", config.Params.SAddr)
+	fmt.Println("Running server on", config.Params.RunAddr)
 
 	r := chi.NewRouter()
 
@@ -28,7 +28,7 @@ func run() error {
 		r.Get("/{hash}", handlers.FetchHandler)
 	})
 
-	if err := http.ListenAndServe(config.Params.SAddr, r); err != nil {
+	if err := http.ListenAndServe(config.Params.RunAddr, r); err != nil {
 		if !errors.Is(err, http.ErrServerClosed) {
 			return fmt.Errorf("HTTP server has encoutenred an error: %w", err)
 		}
