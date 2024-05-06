@@ -7,14 +7,14 @@ import (
 
 type Settings struct {
 	RunAddr string
-	BaseUrl string
+	BaseURL string
 }
 
 var Params Settings
 
 func ParseFlags() {
 	flag.StringVar(&Params.RunAddr, "a", "localhost:8080", "address and port to run server")
-	flag.StringVar(&Params.BaseUrl, "b", "http://localhost:8080", "address and port to urls")
+	flag.StringVar(&Params.BaseURL, "b", "http://localhost:8080", "address and port to urls")
 
 	flag.Parse()
 
@@ -22,7 +22,7 @@ func ParseFlags() {
 		Params.RunAddr = envRunAddr
 	}
 
-	if envBaseUrl := os.Getenv("BASE_URL"); envBaseUrl != "" {
-		Params.BaseUrl = envBaseUrl
+	if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
+		Params.BaseURL = envBaseURL
 	}
 }
