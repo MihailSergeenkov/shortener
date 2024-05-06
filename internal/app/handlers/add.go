@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/MihailSergeenkov/shortener/internal/app/config"
 	"github.com/MihailSergeenkov/shortener/internal/app/storage"
 )
 
@@ -23,7 +24,7 @@ func AddHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url := fmt.Sprintf(`http://localhost:8080/%s`, h)
+	url := fmt.Sprintf(`%s/%s`, config.Params.UAddr, h)
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(url))

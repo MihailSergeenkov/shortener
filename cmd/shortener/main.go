@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/MihailSergeenkov/shortener/internal/app/config"
 	"github.com/MihailSergeenkov/shortener/internal/app/handlers"
 	"github.com/go-chi/chi/v5"
 )
@@ -17,6 +18,8 @@ func main() {
 }
 
 func run() error {
+	config.ParseFlags()
+	fmt.Println("Running server on", config.Params.SAddr)
 
 	r := chi.NewRouter()
 
@@ -25,7 +28,7 @@ func run() error {
 		r.Get("/{hash}", handlers.FetchHandler)
 	})
 
-	if err := http.ListenAndServe(":8080", r); err != nil {
+	if err := http.ListenAndServe(config.Params.SAddr, r); err != nil {
 		if !errors.Is(err, http.ErrServerClosed) {
 			return fmt.Errorf("HTTP server has encoutenred an error: %w", err)
 		}
