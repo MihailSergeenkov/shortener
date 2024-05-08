@@ -28,5 +28,4 @@ func FetchHandler(urls storage.Urls) http.HandlerFunc {
 		w.Header().Set("Location", u)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	}
-
 }

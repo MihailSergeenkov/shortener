@@ -42,12 +42,12 @@ func TestAddHandler(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			request := httptest.NewRequest(test.request.method, "/", nil)
+			request := httptest.NewRequest(test.request.method, "/", http.NoBody)
 			w := httptest.NewRecorder()
 			AddHandler(test.urls)(w, request)
 
 			res := w.Result()
-			defer res.Body.Close()
+			defer closeBody(t, res)
 
 			assert.Equal(t, test.want.code, res.StatusCode)
 

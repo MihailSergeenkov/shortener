@@ -10,9 +10,11 @@ import (
 type Urls map[string]string
 
 var ErrURLNotFound = errors.New("url not found")
+var initSize = 100
+var keyBytes = 8
 
 func Init() Urls {
-	return make(Urls, 100)
+	return make(Urls, initSize)
 }
 
 func (urls Urls) AddURL(u string) (string, error) {
@@ -41,7 +43,7 @@ func (urls Urls) FetchURL(id string) (string, error) {
 }
 
 func randomHex() (string, error) {
-	bytes := make([]byte, 8)
+	bytes := make([]byte, keyBytes)
 
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err

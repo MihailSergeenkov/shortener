@@ -18,8 +18,12 @@ func main() {
 }
 
 func run() error {
-	config.ParseFlags()
+	if err := config.ParseFlags(); err != nil {
+		return fmt.Errorf("Config error: %w", err)
+	}
+
 	log.Printf("Running server on: %s", config.Params.RunAddr)
+
 	s := storage.Init()
 	r := routes.Init(s)
 

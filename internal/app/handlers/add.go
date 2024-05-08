@@ -37,7 +37,13 @@ func AddHandler(urls storage.Urls) http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(result))
-	}
 
+		_, err = w.Write([]byte(result))
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
+	}
 }

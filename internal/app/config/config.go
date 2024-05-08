@@ -13,11 +13,17 @@ type Settings struct {
 
 var Params Settings
 
-func ParseFlags() {
+func ParseFlags() error {
 	flag.StringVar(&Params.RunAddr, "a", "localhost:8080", "address and port to run server")
 	flag.StringVar(&Params.BaseURL, "b", "http://localhost:8080", "address and port to urls")
 
 	flag.Parse()
 
-	env.Parse(&Params)
+	err := env.Parse(&Params)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
