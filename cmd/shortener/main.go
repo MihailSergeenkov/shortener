@@ -19,7 +19,7 @@ func main() {
 
 func run() error {
 	if err := config.ParseFlags(); err != nil {
-		return fmt.Errorf("Config error: %w", err)
+		return fmt.Errorf("config error: %w", err)
 	}
 
 	log.Printf("Running server on: %s", config.Params.RunAddr)

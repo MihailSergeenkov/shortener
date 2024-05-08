@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"fmt"
 
 	"github.com/caarlos0/env/v11"
 )
@@ -22,7 +23,7 @@ func ParseFlags() error {
 	err := env.Parse(&Params)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("env error: %w", err)
 	}
 
 	return nil

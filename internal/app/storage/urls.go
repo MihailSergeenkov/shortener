@@ -46,7 +46,7 @@ func randomHex() (string, error) {
 	bytes := make([]byte, keyBytes)
 
 	if _, err := rand.Read(bytes); err != nil {
-		return "", err
+		return "", fmt.Errorf("generate key error: %w", err)
 	}
 
 	return hex.EncodeToString(bytes), nil

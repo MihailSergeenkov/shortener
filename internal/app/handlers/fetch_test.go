@@ -73,11 +73,3 @@ func TestFetchHandler(t *testing.T) {
 		})
 	}
 }
-
-func closeBody(t *testing.T, r *http.Response) {
-	err := r.Body.Close()
-
-	if err != nil {
-		t.Log(err)
-	}
-}
