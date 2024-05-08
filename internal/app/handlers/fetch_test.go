@@ -11,7 +11,6 @@ import (
 
 func TestFetchHandler(t *testing.T) {
 	url := "https://ya.ru/some"
-	h, _ := storage.AddURL(url)
 
 	type request struct {
 		method string
@@ -24,28 +23,35 @@ func TestFetchHandler(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
+		urls    storage.Urls
 		request request
 		want    want
 	}{
 		{
 			name: "success fetch url",
+			urls: storage.Urls{
+				"123": url,
+			},
 			request: request{
 				method: http.MethodGet,
-				path:   "/" + h,
+				path:   "/123",
 			},
 			want: want{
-				code: 307,
+				code: http.StatusTemporaryRedirect,
 				url:  url,
 			},
 		},
 		{
 			name: "when url not found",
+			urls: storage.Urls{
+				"123": url,
+			},
 			request: request{
 				method: http.MethodGet,
 				path:   "/12345678",
 			},
 			want: want{
-				code: 404,
+				code: http.StatusNotFound,
 				url:  "",
 			},
 		},
@@ -54,14 +60,14 @@ func TestFetchHandler(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			request := httptest.NewRequest(test.request.method, test.request.path, nil)
 			w := httptest.NewRecorder()
-			FetchHandler(w, request)
+			FetchHandler(test.urls)(w, request)
 
 			res := w.Result()
 			defer res.Body.Close()
 
 			assert.Equal(t, test.want.code, res.StatusCode)
 
-			if test.want.code == 307 {
+			if test.want.code == http.StatusTemporaryRedirect {
 				assert.Equal(t, test.want.url, res.Header.Get("Location"))
 			}
 		})

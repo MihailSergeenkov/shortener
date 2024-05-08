@@ -7,33 +7,41 @@ import (
 	"fmt"
 )
 
-var urls = make(map[string]string, 100)
+type Urls map[string]string
+
 var ErrURLNotFound = errors.New("url not found")
 
-func AddURL(u string) (string, error) {
-	h, err := randomHex()
-
-	if err != nil {
-		return "", err
-	}
-
-	urls[h] = u
-
-	return h, nil
+func Init() Urls {
+	return make(Urls, 100)
 }
 
-func FetchURL(h string) (string, error) {
-	u, ok := urls[h]
+func (urls Urls) AddURL(u string) (string, error) {
+	for {
+		id, err := randomHex()
+		if err != nil {
+			return "", err
+		}
+		if _, ok := urls[id]; ok {
+			continue
+		}
+
+		urls[id] = u
+		return id, nil
+	}
+}
+
+func (urls Urls) FetchURL(id string) (string, error) {
+	u, ok := urls[id]
 
 	if !ok {
-		return "", fmt.Errorf("%w for hash %s", ErrURLNotFound, h)
+		return "", fmt.Errorf("%w for id %s", ErrURLNotFound, id)
 	}
 
 	return u, nil
 }
 
 func randomHex() (string, error) {
-	bytes := make([]byte, 4)
+	bytes := make([]byte, 8)
 
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err

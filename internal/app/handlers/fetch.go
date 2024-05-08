@@ -2,34 +2,31 @@ package handlers
 
 import (
 	"errors"
+	"log"
 	"net/http"
-	"regexp"
 	"strings"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/storage"
 )
 
-func FetchHandler(w http.ResponseWriter, r *http.Request) {
-	re := regexp.MustCompile(`^/\w{8}$`)
-	key := re.FindString(r.URL.Path)
+func FetchHandler(urls storage.Urls) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := strings.TrimLeft(r.URL.Path, "/")
+		u, err := urls.FetchURL(id)
 
-	if key == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+		if err != nil {
+			if errors.Is(err, storage.ErrURLNotFound) {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
 
-	u, err := storage.FetchURL(strings.TrimLeft(key, "/"))
-
-	if err != nil {
-		if errors.Is(err, storage.ErrURLNotFound) {
-			w.WriteHeader(http.StatusNotFound)
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
 			return
 		}
 
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		w.Header().Set("Location", u)
+		w.WriteHeader(http.StatusTemporaryRedirect)
 	}
 
-	w.Header().Set("Location", u)
-	w.WriteHeader(http.StatusTemporaryRedirect)
 }

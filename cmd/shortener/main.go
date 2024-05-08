@@ -7,8 +7,8 @@ import (
 	"net/http"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
-	"github.com/MihailSergeenkov/shortener/internal/app/handlers"
-	"github.com/go-chi/chi/v5"
+	"github.com/MihailSergeenkov/shortener/internal/app/routes"
+	"github.com/MihailSergeenkov/shortener/internal/app/storage"
 )
 
 func main() {
@@ -19,14 +19,9 @@ func main() {
 
 func run() error {
 	config.ParseFlags()
-	fmt.Println("Running server on", config.Params.RunAddr)
-
-	r := chi.NewRouter()
-
-	r.Route("/", func(r chi.Router) {
-		r.Post("/", handlers.AddHandler)
-		r.Get("/{hash}", handlers.FetchHandler)
-	})
+	log.Printf("Running server on: %s", config.Params.RunAddr)
+	s := storage.Init()
+	r := routes.Init(s)
 
 	if err := http.ListenAndServe(config.Params.RunAddr, r); err != nil {
 		if !errors.Is(err, http.ErrServerClosed) {
