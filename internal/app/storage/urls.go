@@ -10,18 +10,22 @@ import (
 const (
 	initSize int = 100
 	keyBytes int = 8
+	maxRetry int = 5
+)
+
+var (
+	ErrURLNotFound = errors.New("url not found")
+	ErrMaxRetry    = errors.New("generation attempts exceeded")
 )
 
 type Urls map[string]string
-
-var ErrURLNotFound = errors.New("url not found")
 
 func Init() Urls {
 	return make(Urls, initSize)
 }
 
 func (urls Urls) AddURL(u string) (string, error) {
-	for {
+	for i := 0; i < maxRetry; i++ {
 		id, err := randomHex()
 		if err != nil {
 			return "", err
@@ -33,6 +37,8 @@ func (urls Urls) AddURL(u string) (string, error) {
 		urls[id] = u
 		return id, nil
 	}
+
+	return "", fmt.Errorf("%w for url %s", ErrMaxRetry, u)
 }
 
 func (urls Urls) FetchURL(id string) (string, error) {
