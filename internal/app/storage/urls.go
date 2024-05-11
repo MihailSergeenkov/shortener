@@ -7,11 +7,14 @@ import (
 	"fmt"
 )
 
+const (
+	initSize int = 100
+	keyBytes int = 8
+)
+
 type Urls map[string]string
 
 var ErrURLNotFound = errors.New("url not found")
-var initSize = 100
-var keyBytes = 8
 
 func Init() Urls {
 	return make(Urls, initSize)

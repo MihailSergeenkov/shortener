@@ -21,7 +21,7 @@ func FetchHandler(urls storage.Urls) http.HandlerFunc {
 			}
 
 			w.WriteHeader(http.StatusInternalServerError)
-			log.Println(err)
+			log.Printf("failed to fetch URL from storage: %v", err)
 			return
 		}
 

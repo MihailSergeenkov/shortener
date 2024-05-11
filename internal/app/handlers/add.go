@@ -16,7 +16,7 @@ func AddHandler(urls storage.Urls) http.HandlerFunc {
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			log.Println(err)
+			log.Printf("failed to read request body: %v", err)
 			return
 		}
 
@@ -24,7 +24,7 @@ func AddHandler(urls storage.Urls) http.HandlerFunc {
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			log.Println(err)
+			log.Printf("failed to add URL to storage: %v", err)
 			return
 		}
 
@@ -32,7 +32,7 @@ func AddHandler(urls storage.Urls) http.HandlerFunc {
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			log.Println(err)
+			log.Printf("failed to construct URL: %v", err)
 			return
 		}
 
@@ -42,7 +42,7 @@ func AddHandler(urls storage.Urls) http.HandlerFunc {
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			log.Println(err)
+			log.Printf("failed to write response body: %v", err)
 			return
 		}
 	}
