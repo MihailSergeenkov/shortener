@@ -25,7 +25,7 @@ func Init() Urls {
 }
 
 func (urls Urls) AddURL(u string) (string, error) {
-	for i := 0; i < maxRetry; i++ {
+	for range maxRetry {
 		id, err := randomHex()
 		if err != nil {
 			return "", err
