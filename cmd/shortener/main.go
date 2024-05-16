@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
+	"github.com/MihailSergeenkov/shortener/internal/app/logger"
 	"github.com/MihailSergeenkov/shortener/internal/app/routes"
 	"github.com/MihailSergeenkov/shortener/internal/app/storage"
 )
@@ -20,6 +21,10 @@ func main() {
 func run() error {
 	if err := config.ParseFlags(); err != nil {
 		return fmt.Errorf("config error: %w", err)
+	}
+
+	if err := logger.Init(config.Params.LogLevel); err != nil {
+		return fmt.Errorf("logger error: %w", err)
 	}
 
 	log.Printf("Running server on: %s", config.Params.RunAddr)
