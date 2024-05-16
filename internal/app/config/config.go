@@ -23,7 +23,7 @@ func ParseFlags() error {
 		lev, err := zapcore.ParseLevel(s)
 
 		if err != nil {
-			return nil
+			return fmt.Errorf("parse log level env error: %w", err)
 		}
 
 		Params.LogLevel = lev

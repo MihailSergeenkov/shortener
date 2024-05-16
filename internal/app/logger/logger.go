@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -27,7 +28,7 @@ func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 	size, err := r.ResponseWriter.Write(b)
 	r.responseData.size += size
 
-	return size, err
+	return size, err //nolint:wrapcheck // Нужно обернуть, но возврат должен остаться оригинальным
 }
 
 func (r *loggingResponseWriter) WriteHeader(statusCode int) {
@@ -43,7 +44,13 @@ func Init(level zapcore.Level) error {
 	if err != nil {
 		return fmt.Errorf("logger build failed: %w", err)
 	}
-	defer logger.Sync()
+	defer func() {
+		err := logger.Sync()
+
+		if err != nil {
+			log.Printf("failed to sync logger: %v", err)
+		}
+	}()
 
 	Log = logger
 	return nil
@@ -71,7 +78,7 @@ func WithRequestLogging(next http.Handler) http.Handler {
 		Log.Info("got incoming HTTP request",
 			zap.String("uri", uri),
 			zap.String("method", method),
-			zap.String("duration", fmt.Sprint(duration)),
+			zap.String("duration", duration.String()),
 			zap.Int("status", responseData.status),
 			zap.Int("size", responseData.size),
 		)
