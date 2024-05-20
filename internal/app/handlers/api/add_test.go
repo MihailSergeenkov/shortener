@@ -1,9 +1,10 @@
-package handlers
+package api
 
 import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/storage"
@@ -12,10 +13,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAddHandler(t *testing.T) {
+func TestApiAddHandler(t *testing.T) {
+	urls := storage.Urls{"123": "https://ya.ru/main"}
+
 	type request struct {
-		method string
-		body   string
+		body string
 	}
 
 	type want struct {
@@ -23,18 +25,13 @@ func TestAddHandler(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		urls    storage.Urls
 		request request
 		want    want
 	}{
 		{
 			name: "success add url",
-			urls: storage.Urls{
-				"123": "https://ya.ru/main",
-			},
 			request: request{
-				method: http.MethodPost,
-				body:   "https://ya.ru/some",
+				body: `{"url": "https://practicum.yandex.ru"}`,
 			},
 			want: want{
 				code: http.StatusCreated,
@@ -43,9 +40,9 @@ func TestAddHandler(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			request := httptest.NewRequest(test.request.method, "/", http.NoBody)
+			request := httptest.NewRequest(http.MethodPost, "/api/shorten", strings.NewReader(test.request.body))
 			w := httptest.NewRecorder()
-			AddHandler(test.urls)(w, request)
+			ApiAddHandler(urls)(w, request)
 
 			res := w.Result()
 			defer test_helpers.CloseBody(t, res)
