@@ -1,11 +1,11 @@
-package test_helpers
+package handlers
 
 import (
 	"net/http"
 	"testing"
 )
 
-func CloseBody(t *testing.T, r *http.Response) {
+func closeBody(t *testing.T, r *http.Response) {
 	t.Helper()
 	err := r.Body.Close()
 

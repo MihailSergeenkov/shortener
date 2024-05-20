@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/storage"
-	"github.com/MihailSergeenkov/shortener/internal/app/test_helpers"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -64,7 +63,7 @@ func TestFetchHandler(t *testing.T) {
 			FetchHandler(test.urls)(w, request)
 
 			res := w.Result()
-			defer test_helpers.CloseBody(t, res)
+			defer closeBody(t, res)
 
 			assert.Equal(t, test.want.code, res.StatusCode)
 

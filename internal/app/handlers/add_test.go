@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/storage"
-	"github.com/MihailSergeenkov/shortener/internal/app/test_helpers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -48,7 +47,7 @@ func TestAddHandler(t *testing.T) {
 			AddHandler(test.urls)(w, request)
 
 			res := w.Result()
-			defer test_helpers.CloseBody(t, res)
+			defer closeBody(t, res)
 
 			assert.Equal(t, test.want.code, res.StatusCode)
 

@@ -21,7 +21,7 @@ func Init(urls storage.Urls) chi.Router {
 			r.Use(middleware.AllowContentType("application/json", "text/xml"))
 
 			r.Route("/api", func(r chi.Router) {
-				r.Post("/shorten", api_handlers.ApiAddHandler(urls))
+				r.Post("/shorten", api_handlers.APIAddHandler(urls))
 			})
 		})
 	})

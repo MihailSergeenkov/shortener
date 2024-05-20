@@ -11,7 +11,7 @@ import (
 	"github.com/MihailSergeenkov/shortener/internal/app/storage"
 )
 
-func ApiAddHandler(urls storage.Urls) http.HandlerFunc {
+func APIAddHandler(urls storage.Urls) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req models.Request
 		dec := json.NewDecoder(r.Body)
@@ -21,7 +21,7 @@ func ApiAddHandler(urls storage.Urls) http.HandlerFunc {
 			return
 		}
 
-		h, err := urls.AddURL(req.Url)
+		h, err := urls.AddURL(req.URL)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -48,23 +48,5 @@ func ApiAddHandler(urls storage.Urls) http.HandlerFunc {
 			log.Printf("error encoding responseL: %v", err)
 			return
 		}
-
-		// result, err := url.JoinPath(config.Params.BaseURL, h)
-
-		// if err != nil {
-		// 	w.WriteHeader(http.StatusInternalServerError)
-		// 	log.Printf("failed to construct URL: %v", err)
-		// 	return
-		// }
-
-		// w.WriteHeader(http.StatusCreated)
-
-		// _, err = w.Write([]byte(result))
-
-		// if err != nil {
-		// 	w.WriteHeader(http.StatusInternalServerError)
-		// 	log.Printf("failed to write response body: %v", err)
-		// 	return
-		// }
 	}
 }

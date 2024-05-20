@@ -8,12 +8,11 @@ import (
 	"testing"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/storage"
-	"github.com/MihailSergeenkov/shortener/internal/app/test_helpers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestApiAddHandler(t *testing.T) {
+func TestAPIAddHandler(t *testing.T) {
 	urls := storage.Urls{"123": "https://ya.ru/main"}
 
 	type request struct {
@@ -42,10 +41,16 @@ func TestApiAddHandler(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, "/api/shorten", strings.NewReader(test.request.body))
 			w := httptest.NewRecorder()
-			ApiAddHandler(urls)(w, request)
+			APIAddHandler(urls)(w, request)
 
 			res := w.Result()
-			defer test_helpers.CloseBody(t, res)
+			defer func() {
+				err := res.Body.Close()
+
+				if err != nil {
+					t.Log(err)
+				}
+			}()
 
 			assert.Equal(t, test.want.code, res.StatusCode)
 
