@@ -20,22 +20,22 @@ func newCompressWriter(w http.ResponseWriter) *compressWriter {
 }
 
 func (c *compressWriter) Header() http.Header {
-	return c.w.Header()
+	return c.w.Header() //nolint:wrapcheck // Нужно обернуть, но возврат должен остаться оригинальным
 }
 
 func (c *compressWriter) Write(p []byte) (int, error) {
-	return c.zw.Write(p)
+	return c.zw.Write(p) //nolint:wrapcheck // Нужно обернуть, но возврат должен остаться оригинальным
 }
 
 func (c *compressWriter) WriteHeader(statusCode int) {
-	if statusCode < 300 {
+	if statusCode < http.StatusMultipleChoices {
 		c.w.Header().Set("Content-Encoding", "gzip")
 	}
 	c.w.WriteHeader(statusCode)
 }
 
 func (c *compressWriter) Close() error {
-	return c.zw.Close()
+	return c.zw.Close() //nolint:wrapcheck // Нужно обернуть, но возврат должен остаться оригинальным
 }
 
 type compressReader struct {
@@ -56,23 +56,23 @@ func newCompressReader(r io.ReadCloser) (*compressReader, error) {
 }
 
 func (c compressReader) Read(p []byte) (n int, err error) {
-	return c.zr.Read(p)
+	return c.zr.Read(p) //nolint:wrapcheck // Нужно обернуть, но возврат должен остаться оригинальным
 }
 
 func (c *compressReader) Close() error {
 	if err := c.r.Close(); err != nil {
 		return err
 	}
-	return c.zr.Close()
+	return c.zr.Close() //nolint:wrapcheck // Нужно обернуть, но возврат должен остаться оригинальным
 }
 
 func gzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		contentType := r.Header.Get("Content-Type")
-		if !(strings.Contains(contentType, "application/json") || strings.Contains(contentType, "text/html")) {
-			next.ServeHTTP(w, r)
-			return
-		}
+		// contentType := r.Header.Get("Content-Type")
+		// if !(strings.Contains(contentType, "application/json") || strings.Contains(contentType, "text/html")) {
+		// 	next.ServeHTTP(w, r)
+		// 	return
+		// }
 
 		ow := w
 
@@ -81,7 +81,7 @@ func gzipMiddleware(next http.Handler) http.Handler {
 		if supportsGzip {
 			cw := newCompressWriter(w)
 			ow = cw
-			defer cw.Close()
+			defer cw.Close() //nolint:wrapcheck // Нужно обернуть, но возврат должен остаться оригинальным
 		}
 
 		contentEncoding := r.Header.Get("Content-Encoding")
@@ -94,7 +94,7 @@ func gzipMiddleware(next http.Handler) http.Handler {
 			}
 
 			r.Body = cr
-			defer cr.Close()
+			defer cr.Close() //nolint:wrapcheck // Нужно обернуть, но возврат должен остаться оригинальным
 		}
 
 		next.ServeHTTP(ow, r)

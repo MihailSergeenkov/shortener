@@ -11,8 +11,7 @@ import (
 
 func Init(urls storage.Urls) chi.Router {
 	r := chi.NewRouter()
-	r.Use(logger.WithRequestLogging)
-	r.Use(gzipMiddleware)
+	r.Use(logger.WithRequestLogging, gzipMiddleware)
 
 	r.Route("/", func(r chi.Router) {
 		r.Post("/", handlers.AddHandler(urls))
