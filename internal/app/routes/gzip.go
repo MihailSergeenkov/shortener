@@ -22,7 +22,7 @@ func newCompressWriter(w http.ResponseWriter) *compressWriter {
 }
 
 func (c *compressWriter) Header() http.Header {
-	return c.w.Header() //nolint:wrapcheck // Нужно обернуть, но возврат должен остаться оригинальным
+	return c.w.Header()
 }
 
 func (c *compressWriter) Write(p []byte) (int, error) {
@@ -62,8 +62,8 @@ func (c compressReader) Read(p []byte) (n int, err error) {
 }
 
 func (c *compressReader) Close() error {
-	if err := c.r.Close(); err != nil { //nolint:wrapcheck // Нужно обернуть, но возврат должен остаться оригинальным
-		return err
+	if err := c.r.Close(); err != nil {
+		return fmt.Errorf("failed to close base reader: %w", err)
 	}
 	return c.zr.Close() //nolint:wrapcheck // Нужно обернуть, но возврат должен остаться оригинальным
 }
