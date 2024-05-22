@@ -2,7 +2,9 @@ package routes
 
 import (
 	"compress/gzip"
+	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -46,7 +48,7 @@ type compressReader struct {
 func newCompressReader(r io.ReadCloser) (*compressReader, error) {
 	zr, err := gzip.NewReader(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to init gzip reader: %w", err)
 	}
 
 	return &compressReader{
@@ -60,7 +62,7 @@ func (c compressReader) Read(p []byte) (n int, err error) {
 }
 
 func (c *compressReader) Close() error {
-	if err := c.r.Close(); err != nil {
+	if err := c.r.Close(); err != nil { //nolint:wrapcheck // Нужно обернуть, но возврат должен остаться оригинальным
 		return err
 	}
 	return c.zr.Close() //nolint:wrapcheck // Нужно обернуть, но возврат должен остаться оригинальным
@@ -81,7 +83,13 @@ func gzipMiddleware(next http.Handler) http.Handler {
 		if supportsGzip {
 			cw := newCompressWriter(w)
 			ow = cw
-			defer cw.Close() //nolint:wrapcheck // Нужно обернуть, но возврат должен остаться оригинальным
+			defer func(cw *compressWriter) {
+				err := cw.Close()
+
+				if err != nil {
+					log.Printf("failed to close compress writer: %v", err)
+				}
+			}(cw)
 		}
 
 		contentEncoding := r.Header.Get("Content-Encoding")
@@ -90,11 +98,18 @@ func gzipMiddleware(next http.Handler) http.Handler {
 			cr, err := newCompressReader(r.Body)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
+				log.Printf("failed to create compress reader: %v", err)
 				return
 			}
 
 			r.Body = cr
-			defer cr.Close() //nolint:wrapcheck // Нужно обернуть, но возврат должен остаться оригинальным
+			defer func(cr *compressReader) {
+				err := cr.Close()
+
+				if err != nil {
+					log.Printf("failed to close compress reader: %v", err)
+				}
+			}(cr)
 		}
 
 		next.ServeHTTP(ow, r)
