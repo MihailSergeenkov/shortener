@@ -7,6 +7,9 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/MihailSergeenkov/shortener/internal/app/logger"
+	"go.uber.org/zap"
 )
 
 type compressWriter struct {
@@ -70,12 +73,6 @@ func (c *compressReader) Close() error {
 
 func gzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// contentType := r.Header.Get("Content-Type")
-		// if !(strings.Contains(contentType, "application/json") || strings.Contains(contentType, "text/html")) {
-		// 	next.ServeHTTP(w, r)
-		// 	return
-		// }
-
 		ow := w
 
 		acceptEncoding := r.Header.Get("Accept-Encoding")
@@ -95,6 +92,11 @@ func gzipMiddleware(next http.Handler) http.Handler {
 		contentEncoding := r.Header.Get("Content-Encoding")
 		sendsGzip := strings.Contains(contentEncoding, "gzip")
 		if sendsGzip {
+			contentType := r.Header.Get("Content-Type")
+			if !(strings.Contains(contentType, "application/json") || strings.Contains(contentType, "text/html")) {
+				logger.Log.Warn("content encoding for bad content type", zap.String("content_type", contentType))
+			}
+
 			cr, err := newCompressReader(r.Body)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
