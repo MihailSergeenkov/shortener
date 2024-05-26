@@ -45,7 +45,7 @@ func NewStorage(fsp string) (Storage, error) {
 		return storage, nil
 	}
 
-	file, err := os.OpenFile(fsp, os.O_RDONLY|os.O_CREATE, 0o666)
+	file, err := os.OpenFile(fsp, os.O_RDONLY|os.O_CREATE, 0o600)
 
 	if err != nil {
 		return Storage{}, fmt.Errorf("failed to open file storage: %w", err)
@@ -80,7 +80,7 @@ func (s *Storage) AddURL(originalURL string) (URL, error) {
 	var encoder *json.Encoder
 
 	if s.dumpURLs {
-		file, err := os.OpenFile(s.FileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o666)
+		file, err := os.OpenFile(s.FileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o600)
 		if err != nil {
 			return URL{}, fmt.Errorf("failed to open file storage: %w", err)
 		}
