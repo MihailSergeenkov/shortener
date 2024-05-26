@@ -22,27 +22,26 @@ var (
 	ErrMaxRetry    = errors.New("generation attempts exceeded")
 )
 
-// type Urls map[string]string
-type Url struct {
+type URL struct {
 	ID          uint   `json:"id"`
-	ShortUrl    string `json:"short_url"`
-	OriginalUrl string `json:"original_url"`
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
 }
 
 type Storage struct {
 	FileStoragePath string
-	Urls            map[string]Url
-	dumpUrls        bool
+	URLs            map[string]URL
+	dumpURLs        bool
 }
 
 func NewStorage(fsp string) (Storage, error) {
 	storage := Storage{
 		FileStoragePath: fsp,
-		Urls:            make(map[string]Url, initSize),
-		dumpUrls:        fsp != "",
+		URLs:            make(map[string]URL, initSize),
+		dumpURLs:        fsp != "",
 	}
 
-	if !storage.dumpUrls {
+	if !storage.dumpURLs {
 		return storage, nil
 	}
 
@@ -65,25 +64,25 @@ func NewStorage(fsp string) (Storage, error) {
 	for scanner.Scan() {
 		data := scanner.Bytes()
 
-		url := Url{}
+		url := URL{}
 		err := json.Unmarshal(data, &url)
 		if err != nil {
 			return Storage{}, fmt.Errorf("failed to parse file storage: %w", err)
 		}
 
-		storage.Urls[url.ShortUrl] = url
+		storage.URLs[url.ShortURL] = url
 	}
 
 	return storage, nil
 }
 
-func (s *Storage) AddURL(original_url string) (Url, error) {
+func (s *Storage) AddURL(originalURL string) (URL, error) {
 	var encoder *json.Encoder
 
-	if s.dumpUrls {
+	if s.dumpURLs {
 		file, err := os.OpenFile(s.FileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
-			return Url{}, err
+			return URL{}, err
 		}
 
 		defer func(f *os.File) {
@@ -98,52 +97,52 @@ func (s *Storage) AddURL(original_url string) (Url, error) {
 	}
 
 	for range maxRetry {
-		short_url, err := generateShortUrl()
+		short_url, err := generateShortURL()
 		if err != nil {
-			return Url{}, err
+			return URL{}, err
 		}
 
-		if _, ok := s.Urls[short_url]; ok {
+		if _, ok := s.URLs[short_url]; ok {
 			continue
 		}
 
-		url := Url{
-			ID:          uint(len(s.Urls) + 1),
-			ShortUrl:    short_url,
-			OriginalUrl: original_url,
+		url := URL{
+			ID:          uint(len(s.URLs) + 1),
+			ShortURL:    short_url,
+			OriginalURL: originalURL,
 		}
 
-		s.Urls[short_url] = url
+		s.URLs[short_url] = url
 
-		if s.dumpUrls {
+		if s.dumpURLs {
 			encoderErr := encoder.Encode(&url)
 
 			if encoderErr != nil {
-				return Url{}, encoderErr
+				return URL{}, encoderErr
 			}
 		}
 
 		return url, nil
 	}
 
-	return Url{}, fmt.Errorf("%w for original url %s", ErrMaxRetry, original_url)
+	return URL{}, fmt.Errorf("%w for original URL %s", ErrMaxRetry, originalURL)
 }
 
-func (s *Storage) FetchURL(short_url string) (Url, error) {
-	u, ok := s.Urls[short_url]
+func (s *Storage) FetchURL(shortURL string) (URL, error) {
+	u, ok := s.URLs[shortURL]
 
 	if !ok {
-		return Url{}, fmt.Errorf("%w for short url %s", ErrURLNotFound, short_url)
+		return URL{}, fmt.Errorf("%w for short URL %s", ErrURLNotFound, shortURL)
 	}
 
 	return u, nil
 }
 
-func generateShortUrl() (string, error) {
+func generateShortURL() (string, error) {
 	bytes := make([]byte, keyBytes)
 
 	if _, err := rand.Read(bytes); err != nil {
-		return "", fmt.Errorf("generate short url error: %w", err)
+		return "", fmt.Errorf("generate short URL error: %w", err)
 	}
 
 	return hex.EncodeToString(bytes), nil

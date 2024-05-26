@@ -28,7 +28,7 @@ func AddHandler(s data.Storage) http.HandlerFunc {
 			return
 		}
 
-		result, err := url.JoinPath(config.Params.BaseURL, u.ShortUrl)
+		result, err := url.JoinPath(config.Params.BaseURL, u.ShortURL)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)

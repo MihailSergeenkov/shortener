@@ -31,11 +31,11 @@ func TestFetchHandler(t *testing.T) {
 			name: "success fetch url",
 			storage: data.Storage{
 				FileStoragePath: "some/path",
-				Urls: map[string]data.Url{
+				URLs: map[string]data.URL{
 					"123": {
 						ID:          1,
-						ShortUrl:    "123",
-						OriginalUrl: url,
+						ShortURL:    "123",
+						OriginalURL: url,
 					},
 				},
 			},
@@ -52,11 +52,11 @@ func TestFetchHandler(t *testing.T) {
 			name: "when url not found",
 			storage: data.Storage{
 				FileStoragePath: "some/path",
-				Urls: map[string]data.Url{
+				URLs: map[string]data.URL{
 					"123": {
 						ID:          1,
-						ShortUrl:    "123",
-						OriginalUrl: url,
+						ShortURL:    "123",
+						OriginalURL: url,
 					},
 				},
 			},

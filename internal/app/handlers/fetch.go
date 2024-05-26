@@ -11,8 +11,8 @@ import (
 
 func FetchHandler(s data.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		short_url := strings.TrimLeft(r.URL.Path, "/")
-		u, err := s.FetchURL(short_url)
+		shortURL := strings.TrimLeft(r.URL.Path, "/")
+		u, err := s.FetchURL(shortURL)
 
 		if err != nil {
 			if errors.Is(err, data.ErrURLNotFound) {
@@ -25,7 +25,7 @@ func FetchHandler(s data.Storage) http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Location", u.OriginalUrl)
+		w.Header().Set("Location", u.OriginalURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	}
 }

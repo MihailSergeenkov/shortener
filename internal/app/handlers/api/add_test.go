@@ -15,11 +15,11 @@ import (
 func TestAPIAddHandler(t *testing.T) {
 	storage := data.Storage{
 		FileStoragePath: "some/path",
-		Urls: map[string]data.Url{
+		URLs: map[string]data.URL{
 			"123": {
 				ID:          1,
-				ShortUrl:    "123",
-				OriginalUrl: "https://ya.ru/main",
+				ShortURL:    "123",
+				OriginalURL: "https://ya.ru/main",
 			},
 		},
 	}
