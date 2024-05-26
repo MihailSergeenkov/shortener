@@ -11,8 +11,8 @@ import (
 type Settings struct {
 	RunAddr         string        `env:"SERVER_ADDRESS"`
 	BaseURL         string        `env:"BASE_URL"`
-	LogLevel        zapcore.Level `env:"LOG_LEVEL"`
 	FileStoragePath string        `env:"FILE_STORAGE_PATH"`
+	LogLevel        zapcore.Level `env:"LOG_LEVEL"`
 }
 
 var Params Settings = Settings{LogLevel: zapcore.ErrorLevel}

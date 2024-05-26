@@ -23,14 +23,14 @@ var (
 )
 
 type URL struct {
-	ID          uint   `json:"id"`
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
+	ID          uint   `json:"id"`
 }
 
 type Storage struct {
-	FileStoragePath string
 	URLs            map[string]URL
+	FileStoragePath string
 	dumpURLs        bool
 }
 
@@ -45,7 +45,7 @@ func NewStorage(fsp string) (Storage, error) {
 		return storage, nil
 	}
 
-	file, err := os.OpenFile(fsp, os.O_RDONLY|os.O_CREATE, 0666)
+	file, err := os.OpenFile(fsp, os.O_RDONLY|os.O_CREATE, 0o666)
 
 	if err != nil {
 		return Storage{}, fmt.Errorf("failed to open file storage: %w", err)
@@ -80,9 +80,9 @@ func (s *Storage) AddURL(originalURL string) (URL, error) {
 	var encoder *json.Encoder
 
 	if s.dumpURLs {
-		file, err := os.OpenFile(s.FileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+		file, err := os.OpenFile(s.FileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o666)
 		if err != nil {
-			return URL{}, err
+			return URL{}, fmt.Errorf("failed to open file storage: %w", err)
 		}
 
 		defer func(f *os.File) {
@@ -97,28 +97,28 @@ func (s *Storage) AddURL(originalURL string) (URL, error) {
 	}
 
 	for range maxRetry {
-		short_url, err := generateShortURL()
+		shortURL, err := generateShortURL()
 		if err != nil {
 			return URL{}, err
 		}
 
-		if _, ok := s.URLs[short_url]; ok {
+		if _, ok := s.URLs[shortURL]; ok {
 			continue
 		}
 
 		url := URL{
 			ID:          uint(len(s.URLs) + 1),
-			ShortURL:    short_url,
+			ShortURL:    shortURL,
 			OriginalURL: originalURL,
 		}
 
-		s.URLs[short_url] = url
+		s.URLs[shortURL] = url
 
 		if s.dumpURLs {
 			encoderErr := encoder.Encode(&url)
 
 			if encoderErr != nil {
-				return URL{}, encoderErr
+				return URL{}, fmt.Errorf("failed to dump URL: %w", encoderErr)
 			}
 		}
 
