@@ -6,16 +6,16 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/MihailSergeenkov/shortener/internal/app/storage"
+	"github.com/MihailSergeenkov/shortener/internal/app/data"
 )
 
-func FetchHandler(urls storage.Urls) http.HandlerFunc {
+func FetchHandler(s data.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id := strings.TrimLeft(r.URL.Path, "/")
-		u, err := urls.FetchURL(id)
+		short_url := strings.TrimLeft(r.URL.Path, "/")
+		u, err := s.FetchURL(short_url)
 
 		if err != nil {
-			if errors.Is(err, storage.ErrURLNotFound) {
+			if errors.Is(err, data.ErrURLNotFound) {
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
@@ -25,7 +25,7 @@ func FetchHandler(urls storage.Urls) http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Location", u)
+		w.Header().Set("Location", u.OriginalUrl)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	}
 }

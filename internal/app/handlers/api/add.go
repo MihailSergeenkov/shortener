@@ -7,11 +7,11 @@ import (
 	"net/url"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
+	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"github.com/MihailSergeenkov/shortener/internal/app/models"
-	"github.com/MihailSergeenkov/shortener/internal/app/storage"
 )
 
-func APIAddHandler(urls storage.Urls) http.HandlerFunc {
+func APIAddHandler(s data.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req models.Request
 		dec := json.NewDecoder(r.Body)
@@ -21,7 +21,7 @@ func APIAddHandler(urls storage.Urls) http.HandlerFunc {
 			return
 		}
 
-		h, err := urls.AddURL(req.URL)
+		u, err := s.AddURL(req.URL)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -29,7 +29,7 @@ func APIAddHandler(urls storage.Urls) http.HandlerFunc {
 			return
 		}
 
-		result, err := url.JoinPath(config.Params.BaseURL, h)
+		result, err := url.JoinPath(config.Params.BaseURL, u.ShortUrl)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)

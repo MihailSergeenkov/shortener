@@ -9,9 +9,10 @@ import (
 )
 
 type Settings struct {
-	RunAddr  string        `env:"SERVER_ADDRESS"`
-	BaseURL  string        `env:"BASE_URL"`
-	LogLevel zapcore.Level `env:"LOG_LEVEL"`
+	RunAddr         string        `env:"SERVER_ADDRESS"`
+	BaseURL         string        `env:"BASE_URL"`
+	LogLevel        zapcore.Level `env:"LOG_LEVEL"`
+	FileStoragePath string        `env:"FILE_STORAGE_PATH"`
 }
 
 var Params Settings = Settings{LogLevel: zapcore.ErrorLevel}
@@ -29,6 +30,8 @@ func ParseFlags() error {
 		Params.LogLevel = lev
 		return nil
 	})
+
+	flag.StringVar(&Params.FileStoragePath, "f", "/tmp/short-url-db.json", "file storage path")
 
 	flag.Parse()
 

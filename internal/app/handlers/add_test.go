@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/MihailSergeenkov/shortener/internal/app/storage"
+	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,14 +22,21 @@ func TestAddHandler(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		urls    storage.Urls
+		storage data.Storage
 		request request
 		want    want
 	}{
 		{
 			name: "success add url",
-			urls: storage.Urls{
-				"123": "https://ya.ru/main",
+			storage: data.Storage{
+				FileStoragePath: "some/path",
+				Urls: map[string]data.Url{
+					"123": {
+						ID:          1,
+						ShortUrl:    "123",
+						OriginalUrl: "https://ya.ru/main",
+					},
+				},
 			},
 			request: request{
 				method: http.MethodPost,
@@ -44,7 +51,7 @@ func TestAddHandler(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			request := httptest.NewRequest(test.request.method, "/", http.NoBody)
 			w := httptest.NewRecorder()
-			AddHandler(test.urls)(w, request)
+			AddHandler(test.storage)(w, request)
 
 			res := w.Result()
 			defer closeBody(t, res)

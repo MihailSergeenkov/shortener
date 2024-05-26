@@ -7,13 +7,22 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/MihailSergeenkov/shortener/internal/app/storage"
+	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestAPIAddHandler(t *testing.T) {
-	urls := storage.Urls{"123": "https://ya.ru/main"}
+	storage := data.Storage{
+		FileStoragePath: "some/path",
+		Urls: map[string]data.Url{
+			"123": {
+				ID:          1,
+				ShortUrl:    "123",
+				OriginalUrl: "https://ya.ru/main",
+			},
+		},
+	}
 
 	type request struct {
 		body string
@@ -41,7 +50,7 @@ func TestAPIAddHandler(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, "/api/shorten", strings.NewReader(test.request.body))
 			w := httptest.NewRecorder()
-			APIAddHandler(urls)(w, request)
+			APIAddHandler(storage)(w, request)
 
 			res := w.Result()
 			defer func() {

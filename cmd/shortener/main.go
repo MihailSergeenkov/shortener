@@ -7,9 +7,9 @@ import (
 	"net/http"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
+	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"github.com/MihailSergeenkov/shortener/internal/app/logger"
 	"github.com/MihailSergeenkov/shortener/internal/app/routes"
-	"github.com/MihailSergeenkov/shortener/internal/app/storage"
 )
 
 func main() {
@@ -29,7 +29,11 @@ func run() error {
 
 	log.Printf("Running server on: %s", config.Params.RunAddr)
 
-	s := storage.Init()
+	s, err := data.NewStorage(config.Params.FileStoragePath)
+	if err != nil {
+		return fmt.Errorf("storage error: %w", err)
+	}
+
 	r := routes.Init(s)
 
 	if err := http.ListenAndServe(config.Params.RunAddr, r); err != nil {
