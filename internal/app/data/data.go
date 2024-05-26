@@ -7,14 +7,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 )
 
 const (
-	initSize int = 100
-	keyBytes int = 8
-	maxRetry int = 5
+	initSize int         = 100
+	keyBytes int         = 8
+	maxRetry int         = 5
+	filePerm fs.FileMode = 0o600
 )
 
 var (
@@ -45,7 +47,7 @@ func NewStorage(fsp string) (Storage, error) {
 		return storage, nil
 	}
 
-	file, err := os.OpenFile(fsp, os.O_RDONLY|os.O_CREATE, 0o600)
+	file, err := os.OpenFile(fsp, os.O_RDONLY|os.O_CREATE, filePerm)
 
 	if err != nil {
 		return Storage{}, fmt.Errorf("failed to open file storage: %w", err)
@@ -80,7 +82,7 @@ func (s *Storage) AddURL(originalURL string) (URL, error) {
 	var encoder *json.Encoder
 
 	if s.dumpURLs {
-		file, err := os.OpenFile(s.FileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o600)
+		file, err := os.OpenFile(s.FileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, filePerm)
 		if err != nil {
 			return URL{}, fmt.Errorf("failed to open file storage: %w", err)
 		}
