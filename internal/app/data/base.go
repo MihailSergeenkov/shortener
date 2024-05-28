@@ -32,7 +32,7 @@ func (s *BaseStorage) AddURL(originalURL string) (models.URL, error) {
 	for range maxRetry {
 		shortURL, err := services.GenerateShortURL()
 		if err != nil {
-			return models.URL{}, err
+			return models.URL{}, fmt.Errorf("failed to generate short URL: %w", err)
 		}
 
 		if _, ok := s.urls[shortURL]; ok {

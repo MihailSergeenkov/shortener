@@ -7,6 +7,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const defaultStatus = 200
+
 type (
 	responseData struct {
 		status int
@@ -35,7 +37,7 @@ func withRequestLogging(l *zap.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			responseData := &responseData{
-				status: 200,
+				status: defaultStatus,
 				size:   0,
 			}
 			lw := loggingResponseWriter{

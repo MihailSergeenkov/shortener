@@ -15,8 +15,8 @@ const filePerm fs.FileMode = 0o600
 
 type FileStorage struct {
 	baseStorage     BaseStorage
-	fileStoragePath string
 	logger          *zap.Logger
+	fileStoragePath string
 }
 
 func NewFileStorage(logger *zap.Logger, fsp string) (*FileStorage, error) {
