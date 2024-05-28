@@ -1,151 +1,19 @@
 package data
 
 import (
-	"bufio"
-	"crypto/rand"
-	"encoding/hex"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io/fs"
-	"log"
-	"os"
+	"github.com/MihailSergeenkov/shortener/internal/app/models"
+	"go.uber.org/zap"
 )
 
-const (
-	initSize int         = 100
-	keyBytes int         = 8
-	maxRetry int         = 5
-	filePerm fs.FileMode = 0o600
-)
-
-var (
-	ErrURLNotFound = errors.New("url not found")
-	ErrMaxRetry    = errors.New("generation attempts exceeded")
-)
-
-type URL struct {
-	ShortURL    string `json:"short_url"`
-	OriginalURL string `json:"original_url"`
-	ID          uint   `json:"id"`
+type Storager interface {
+	AddURL(originalURL string) (models.URL, error)
+	FetchURL(shortURL string) (models.URL, error)
 }
 
-type Storage struct {
-	URLs            map[string]URL
-	FileStoragePath string
-	dumpURLs        bool
-}
-
-func NewStorage(fsp string) (Storage, error) {
-	storage := Storage{
-		FileStoragePath: fsp,
-		URLs:            make(map[string]URL, initSize),
-		dumpURLs:        fsp != "",
+func NewStorage(logger *zap.Logger, fsp string) (Storager, error) {
+	if fsp == "" {
+		return NewBaseStorage(), nil
 	}
 
-	if !storage.dumpURLs {
-		return storage, nil
-	}
-
-	file, err := os.OpenFile(fsp, os.O_RDONLY|os.O_CREATE, filePerm)
-
-	if err != nil {
-		return Storage{}, fmt.Errorf("failed to open file storage: %w", err)
-	}
-
-	defer func(f *os.File) {
-		err := f.Close()
-
-		if err != nil {
-			log.Printf("failed to close file storage: %v", err)
-		}
-	}(file)
-
-	scanner := bufio.NewScanner(file)
-
-	for scanner.Scan() {
-		data := scanner.Bytes()
-
-		url := URL{}
-		err := json.Unmarshal(data, &url)
-		if err != nil {
-			return Storage{}, fmt.Errorf("failed to parse file storage: %w", err)
-		}
-
-		storage.URLs[url.ShortURL] = url
-	}
-
-	return storage, nil
-}
-
-func (s *Storage) AddURL(originalURL string) (URL, error) {
-	var encoder *json.Encoder
-
-	if s.dumpURLs {
-		file, err := os.OpenFile(s.FileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, filePerm)
-		if err != nil {
-			return URL{}, fmt.Errorf("failed to open file storage: %w", err)
-		}
-
-		defer func(f *os.File) {
-			err := f.Close()
-
-			if err != nil {
-				log.Printf("failed to close file storage: %v", err)
-			}
-		}(file)
-
-		encoder = json.NewEncoder(file)
-	}
-
-	for range maxRetry {
-		shortURL, err := generateShortURL()
-		if err != nil {
-			return URL{}, err
-		}
-
-		if _, ok := s.URLs[shortURL]; ok {
-			continue
-		}
-
-		url := URL{
-			ID:          uint(len(s.URLs) + 1),
-			ShortURL:    shortURL,
-			OriginalURL: originalURL,
-		}
-
-		s.URLs[shortURL] = url
-
-		if s.dumpURLs {
-			encoderErr := encoder.Encode(&url)
-
-			if encoderErr != nil {
-				return URL{}, fmt.Errorf("failed to dump URL: %w", encoderErr)
-			}
-		}
-
-		return url, nil
-	}
-
-	return URL{}, fmt.Errorf("%w for original URL %s", ErrMaxRetry, originalURL)
-}
-
-func (s *Storage) FetchURL(shortURL string) (URL, error) {
-	u, ok := s.URLs[shortURL]
-
-	if !ok {
-		return URL{}, fmt.Errorf("%w for short URL %s", ErrURLNotFound, shortURL)
-	}
-
-	return u, nil
-}
-
-func generateShortURL() (string, error) {
-	bytes := make([]byte, keyBytes)
-
-	if _, err := rand.Read(bytes); err != nil {
-		return "", fmt.Errorf("generate short URL error: %w", err)
-	}
-
-	return hex.EncodeToString(bytes), nil
+	return NewFileStorage(logger, fsp)
 }

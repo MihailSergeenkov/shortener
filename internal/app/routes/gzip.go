@@ -4,13 +4,13 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 
-	"github.com/MihailSergeenkov/shortener/internal/app/logger"
 	"go.uber.org/zap"
 )
+
+const maxStatusCode = 300
 
 type compressWriter struct {
 	w  http.ResponseWriter
@@ -33,7 +33,7 @@ func (c *compressWriter) Write(p []byte) (int, error) {
 }
 
 func (c *compressWriter) WriteHeader(statusCode int) {
-	if statusCode < http.StatusMultipleChoices {
+	if statusCode < maxStatusCode {
 		c.w.Header().Set("Content-Encoding", "gzip")
 	}
 	c.w.WriteHeader(statusCode)
@@ -44,19 +44,21 @@ func (c *compressWriter) Close() error {
 }
 
 type compressReader struct {
-	r  io.ReadCloser
-	zr *gzip.Reader
+	r      io.ReadCloser
+	zr     *gzip.Reader
+	logger *zap.Logger
 }
 
-func newCompressReader(r io.ReadCloser) (*compressReader, error) {
+func newCompressReader(r io.ReadCloser, l *zap.Logger) (*compressReader, error) {
 	zr, err := gzip.NewReader(r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init gzip reader: %w", err)
 	}
 
 	return &compressReader{
-		r:  r,
-		zr: zr,
+		r:      r,
+		zr:     zr,
+		logger: l,
 	}, nil
 }
 
@@ -66,54 +68,56 @@ func (c compressReader) Read(p []byte) (n int, err error) {
 
 func (c *compressReader) Close() error {
 	if err := c.r.Close(); err != nil {
-		return fmt.Errorf("failed to close base reader: %w", err)
+		c.logger.Error("failed to close base reader", zap.Error(err))
 	}
 	return c.zr.Close() //nolint:wrapcheck // Нужно обернуть, но возврат должен остаться оригинальным
 }
 
-func gzipMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ow := w
+func gzipMiddleware(l *zap.Logger) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ow := w
 
-		acceptEncoding := r.Header.Get("Accept-Encoding")
-		supportsGzip := strings.Contains(acceptEncoding, "gzip")
-		if supportsGzip {
-			cw := newCompressWriter(w)
-			ow = cw
-			defer func(cw *compressWriter) {
-				err := cw.Close()
+			acceptEncoding := r.Header.Get("Accept-Encoding")
+			supportsGzip := strings.Contains(acceptEncoding, "gzip")
+			if supportsGzip {
+				cw := newCompressWriter(w)
+				ow = cw
+				defer func() {
+					err := cw.Close()
 
-				if err != nil {
-					log.Printf("failed to close compress writer: %v", err)
-				}
-			}(cw)
-		}
-
-		contentEncoding := r.Header.Get("Content-Encoding")
-		sendsGzip := strings.Contains(contentEncoding, "gzip")
-		if sendsGzip {
-			contentType := r.Header.Get("Content-Type")
-			if !(strings.Contains(contentType, "application/json") || strings.Contains(contentType, "text/html")) {
-				logger.Log.Warn("content encoding for bad content type", zap.String("content_type", contentType))
+					if err != nil {
+						l.Error("failed to close compress writer", zap.Error(err))
+					}
+				}()
 			}
 
-			cr, err := newCompressReader(r.Body)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				log.Printf("failed to create compress reader: %v", err)
-				return
+			contentEncoding := r.Header.Get("Content-Encoding")
+			sendsGzip := strings.Contains(contentEncoding, "gzip")
+			if sendsGzip {
+				contentType := r.Header.Get("Content-Type")
+				if !(strings.Contains(contentType, "application/json") || strings.Contains(contentType, "text/html")) {
+					l.Warn("content encoding for bad content type", zap.String("content_type", contentType))
+				}
+
+				cr, err := newCompressReader(r.Body, l)
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					l.Error("failed to create compress reader", zap.Error(err))
+					return
+				}
+
+				r.Body = cr
+				defer func() {
+					err := cr.Close()
+
+					if err != nil {
+						l.Error("failed to close compress reader", zap.Error(err))
+					}
+				}()
 			}
 
-			r.Body = cr
-			defer func(cr *compressReader) {
-				err := cr.Close()
-
-				if err != nil {
-					log.Printf("failed to close compress reader: %v", err)
-				}
-			}(cr)
-		}
-
-		next.ServeHTTP(ow, r)
-	})
+			next.ServeHTTP(ow, r)
+		})
+	}
 }

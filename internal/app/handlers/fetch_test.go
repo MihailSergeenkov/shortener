@@ -5,12 +5,22 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/MihailSergeenkov/shortener/internal/app/data"
+	"github.com/MihailSergeenkov/shortener/internal/app/models"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func TestFetchHandler(t *testing.T) {
-	url := "https://ya.ru/some"
+	logger := zap.NewNop()
+	storage := MockStorage{
+		urls: map[string]models.URL{
+			"123": {
+				ID:          1,
+				ShortURL:    "123",
+				OriginalURL: originalURL,
+			},
+		},
+	}
 
 	type request struct {
 		method string
@@ -23,43 +33,22 @@ func TestFetchHandler(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		storage data.Storage
 		request request
 		want    want
 	}{
 		{
 			name: "success fetch url",
-			storage: data.Storage{
-				FileStoragePath: "some/path",
-				URLs: map[string]data.URL{
-					"123": {
-						ID:          1,
-						ShortURL:    "123",
-						OriginalURL: url,
-					},
-				},
-			},
 			request: request{
 				method: http.MethodGet,
 				path:   "/123",
 			},
 			want: want{
 				code: http.StatusTemporaryRedirect,
-				url:  url,
+				url:  originalURL,
 			},
 		},
 		{
 			name: "when url not found",
-			storage: data.Storage{
-				FileStoragePath: "some/path",
-				URLs: map[string]data.URL{
-					"123": {
-						ID:          1,
-						ShortURL:    "123",
-						OriginalURL: url,
-					},
-				},
-			},
 			request: request{
 				method: http.MethodGet,
 				path:   "/12345678",
@@ -74,7 +63,7 @@ func TestFetchHandler(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			request := httptest.NewRequest(test.request.method, test.request.path, http.NoBody)
 			w := httptest.NewRecorder()
-			FetchHandler(test.storage)(w, request)
+			FetchHandler(logger, &storage)(w, request)
 
 			res := w.Result()
 			defer closeBody(t, res)

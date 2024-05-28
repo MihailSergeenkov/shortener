@@ -2,14 +2,14 @@ package handlers
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
+	"go.uber.org/zap"
 )
 
-func FetchHandler(s data.Storage) http.HandlerFunc {
+func FetchHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		shortURL := strings.TrimLeft(r.URL.Path, "/")
 		u, err := s.FetchURL(shortURL)
@@ -21,7 +21,7 @@ func FetchHandler(s data.Storage) http.HandlerFunc {
 			}
 
 			w.WriteHeader(http.StatusInternalServerError)
-			log.Printf("failed to fetch URL from storage: %v", err)
+			l.Error("failed to fetch URL from storage", zap.Error(err))
 			return
 		}
 

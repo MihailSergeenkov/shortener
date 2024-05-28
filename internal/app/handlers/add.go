@@ -1,22 +1,24 @@
 package handlers
 
 import (
+	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
+	"github.com/MihailSergeenkov/shortener/internal/app/models"
+	"go.uber.org/zap"
 )
 
-func AddHandler(s data.Storage) http.HandlerFunc {
+func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			log.Printf("failed to read request body: %v", err)
+			l.Error("failed to read request body", zap.Error(err))
 			return
 		}
 
@@ -24,7 +26,7 @@ func AddHandler(s data.Storage) http.HandlerFunc {
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			log.Printf("failed to add URL to storage: %v", err)
+			l.Error("failed to add URL to storage", zap.Error(err))
 			return
 		}
 
@@ -32,7 +34,7 @@ func AddHandler(s data.Storage) http.HandlerFunc {
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			log.Printf("failed to construct URL: %v", err)
+			l.Error("failed to construct URL", zap.Error(err))
 			return
 		}
 
@@ -42,7 +44,47 @@ func AddHandler(s data.Storage) http.HandlerFunc {
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			log.Printf("failed to write response body: %v", err)
+			l.Error("failed to write response body", zap.Error(err))
+			return
+		}
+	}
+}
+
+func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req models.Request
+		dec := json.NewDecoder(r.Body)
+		if err := dec.Decode(&req); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			l.Error("failed to read request body", zap.Error(err))
+			return
+		}
+
+		u, err := s.AddURL(req.URL)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			l.Error("failed to add URL to storage", zap.Error(err))
+			return
+		}
+
+		result, err := url.JoinPath(config.Params.BaseURL, u.ShortURL)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			l.Error("failed to construct URL", zap.Error(err))
+			return
+		}
+
+		resp := models.Response{Result: result}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+
+		enc := json.NewEncoder(w)
+		if err := enc.Encode(resp); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			l.Error("error encoding response", zap.Error(err))
 			return
 		}
 	}

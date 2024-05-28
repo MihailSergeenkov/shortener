@@ -7,3 +7,9 @@ type Request struct {
 type Response struct {
 	Result string `json:"result"`
 }
+
+type URL struct {
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
+	ID          uint   `json:"id"`
+}
