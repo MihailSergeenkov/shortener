@@ -5,17 +5,13 @@ import (
 	"fmt"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/models"
-	"github.com/MihailSergeenkov/shortener/internal/app/services"
 )
 
-const (
-	initSize int = 100
-	maxRetry int = 5
-)
+const initSize int = 100
 
 var (
-	ErrURLNotFound = errors.New("url not found")
-	ErrMaxRetry    = errors.New("generation attempts exceeded")
+	ErrURLNotFound          = errors.New("url not found")
+	ErrShortURLAlreadyExist = errors.New("short url already exist")
 )
 
 type BaseStorage struct {
@@ -28,37 +24,28 @@ func NewBaseStorage() *BaseStorage {
 	}
 }
 
-func (s *BaseStorage) AddURL(originalURL string) (models.URL, error) {
-	for range maxRetry {
-		shortURL, err := services.GenerateShortURL()
-		if err != nil {
-			return models.URL{}, fmt.Errorf("failed to generate short URL: %w", err)
-		}
-
-		if _, ok := s.urls[shortURL]; ok {
-			continue
-		}
-
-		url := models.URL{
-			ID:          uint(len(s.urls) + 1),
-			ShortURL:    shortURL,
-			OriginalURL: originalURL,
-		}
-
-		s.urls[shortURL] = url
-
-		return url, nil
+func (s *BaseStorage) StoreShortURL(shortURL string, originalURL string) error {
+	if _, ok := s.urls[shortURL]; ok {
+		return ErrShortURLAlreadyExist
 	}
 
-	return models.URL{}, fmt.Errorf("%w for original URL %s", ErrMaxRetry, originalURL)
+	url := models.URL{
+		ID:          uint(len(s.urls) + 1),
+		ShortURL:    shortURL,
+		OriginalURL: originalURL,
+	}
+
+	s.urls[shortURL] = url
+
+	return nil
 }
 
-func (s *BaseStorage) FetchURL(shortURL string) (models.URL, error) {
+func (s *BaseStorage) GetOriginalURL(shortURL string) (string, error) {
 	u, ok := s.urls[shortURL]
 
 	if !ok {
-		return models.URL{}, fmt.Errorf("%w for short URL %s", ErrURLNotFound, shortURL)
+		return "", fmt.Errorf("%w for short URL %s", ErrURLNotFound, shortURL)
 	}
 
-	return u, nil
+	return u.OriginalURL, nil
 }

@@ -57,10 +57,10 @@ func NewFileStorage(logger *zap.Logger, fsp string) (*FileStorage, error) {
 	return &storage, nil
 }
 
-func (s *FileStorage) AddURL(originalURL string) (models.URL, error) {
+func (s *FileStorage) StoreShortURL(shortURL string, originalURL string) error {
 	file, err := os.OpenFile(s.fileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, filePerm)
 	if err != nil {
-		return models.URL{}, fmt.Errorf("failed to open file storage: %w", err)
+		return fmt.Errorf("failed to open file storage: %w", err)
 	}
 
 	defer func() {
@@ -71,27 +71,22 @@ func (s *FileStorage) AddURL(originalURL string) (models.URL, error) {
 		}
 	}()
 
-	encoder := json.NewEncoder(file)
-	url, err := s.baseStorage.AddURL(originalURL)
-	if err != nil {
-		return models.URL{}, fmt.Errorf("failed to add url: %w", err)
+	baseStoreErr := s.baseStorage.StoreShortURL(shortURL, originalURL)
+	if baseStoreErr != nil {
+		return fmt.Errorf("failed to add url: %w", baseStoreErr)
 	}
 
+	encoder := json.NewEncoder(file)
+	url := s.baseStorage.urls[shortURL]
 	encoderErr := encoder.Encode(&url)
 
 	if encoderErr != nil {
-		return models.URL{}, fmt.Errorf("failed to dump URL: %w", encoderErr)
+		return fmt.Errorf("failed to dump URL: %w", encoderErr)
 	}
 
-	return url, nil
+	return nil
 }
 
-func (s *FileStorage) FetchURL(shortURL string) (models.URL, error) {
-	url, err := s.baseStorage.FetchURL(shortURL)
-
-	if err != nil {
-		return models.URL{}, fmt.Errorf("%w for short URL %s", ErrURLNotFound, shortURL)
-	}
-
-	return url, nil
+func (s *FileStorage) GetOriginalURL(shortURL string) (string, error) {
+	return s.baseStorage.GetOriginalURL(shortURL)
 }

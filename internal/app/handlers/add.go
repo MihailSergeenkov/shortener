@@ -9,6 +9,7 @@ import (
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"github.com/MihailSergeenkov/shortener/internal/app/models"
+	"github.com/MihailSergeenkov/shortener/internal/app/services"
 	"go.uber.org/zap"
 )
 
@@ -22,7 +23,7 @@ func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 			return
 		}
 
-		u, err := s.AddURL(string(body))
+		shortURL, err := services.AddShortURL(s, string(body))
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -30,7 +31,7 @@ func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 			return
 		}
 
-		result, err := url.JoinPath(config.Params.BaseURL, u.ShortURL)
+		result, err := url.JoinPath(config.Params.BaseURL, shortURL)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -60,7 +61,7 @@ func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 			return
 		}
 
-		u, err := s.AddURL(req.URL)
+		shortURL, err := services.AddShortURL(s, req.URL)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -68,7 +69,7 @@ func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 			return
 		}
 
-		result, err := url.JoinPath(config.Params.BaseURL, u.ShortURL)
+		result, err := url.JoinPath(config.Params.BaseURL, shortURL)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)

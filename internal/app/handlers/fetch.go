@@ -12,7 +12,7 @@ import (
 func FetchHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		shortURL := strings.TrimLeft(r.URL.Path, "/")
-		u, err := s.FetchURL(shortURL)
+		u, err := s.GetOriginalURL(shortURL)
 
 		if err != nil {
 			if errors.Is(err, data.ErrURLNotFound) {
@@ -25,7 +25,7 @@ func FetchHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Location", u.OriginalURL)
+		w.Header().Set("Location", u)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	}
 }

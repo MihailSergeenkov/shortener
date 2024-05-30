@@ -12,25 +12,20 @@ type MockStorage struct {
 	urls map[string]models.URL
 }
 
-var shortURL = "123"
 var originalURL = "https://ya.ru/some"
 
-func (s *MockStorage) FetchURL(shortURL string) (models.URL, error) {
+func (s *MockStorage) GetOriginalURL(shortURL string) (string, error) {
 	u, present := s.urls[shortURL]
 
 	if !present {
-		return models.URL{}, data.ErrURLNotFound
+		return "", data.ErrURLNotFound
 	}
 
-	return u, nil
+	return u.OriginalURL, nil
 }
 
-func (s *MockStorage) AddURL(originalURL string) (models.URL, error) {
-	return models.URL{
-		ID:          1,
-		ShortURL:    shortURL,
-		OriginalURL: originalURL,
-	}, nil
+func (s *MockStorage) StoreShortURL(shortURL string, originalURL string) error {
+	return nil
 }
 
 func closeBody(t *testing.T, r *http.Response) {
