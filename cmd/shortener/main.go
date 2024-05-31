@@ -7,8 +7,10 @@ import (
 	"net/http"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
+	"github.com/MihailSergeenkov/shortener/internal/app/data"
+	"github.com/MihailSergeenkov/shortener/internal/app/logger"
 	"github.com/MihailSergeenkov/shortener/internal/app/routes"
-	"github.com/MihailSergeenkov/shortener/internal/app/storage"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -22,10 +24,19 @@ func run() error {
 		return fmt.Errorf("config error: %w", err)
 	}
 
-	log.Printf("Running server on: %s", config.Params.RunAddr)
+	l, err := logger.NewLogger(config.Params.LogLevel)
+	if err != nil {
+		return fmt.Errorf("logger error: %w", err)
+	}
 
-	s := storage.Init()
-	r := routes.Init(s)
+	l.Info("Running server on", zap.String("addr", config.Params.RunAddr))
+
+	s, err := data.NewStorage(l, config.Params.FileStoragePath)
+	if err != nil {
+		return fmt.Errorf("storage error: %w", err)
+	}
+
+	r := routes.NewRouter(l, s)
 
 	if err := http.ListenAndServe(config.Params.RunAddr, r); err != nil {
 		if !errors.Is(err, http.ErrServerClosed) {

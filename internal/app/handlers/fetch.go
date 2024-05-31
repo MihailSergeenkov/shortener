@@ -2,26 +2,26 @@ package handlers
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"strings"
 
-	"github.com/MihailSergeenkov/shortener/internal/app/storage"
+	"github.com/MihailSergeenkov/shortener/internal/app/data"
+	"go.uber.org/zap"
 )
 
-func FetchHandler(urls storage.Urls) http.HandlerFunc {
+func FetchHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id := strings.TrimLeft(r.URL.Path, "/")
-		u, err := urls.FetchURL(id)
+		shortURL := strings.TrimLeft(r.URL.Path, "/")
+		u, err := s.GetOriginalURL(shortURL)
 
 		if err != nil {
-			if errors.Is(err, storage.ErrURLNotFound) {
+			if errors.Is(err, data.ErrURLNotFound) {
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
 
 			w.WriteHeader(http.StatusInternalServerError)
-			log.Printf("failed to fetch URL from storage: %v", err)
+			l.Error("failed to fetch URL from storage", zap.Error(err))
 			return
 		}
 
