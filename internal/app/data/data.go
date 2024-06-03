@@ -12,7 +12,7 @@ type Storager interface {
 
 func NewStorage(logger *zap.Logger, fsp, dbDSN string) (Storager, error) {
 	if dbDSN != "" {
-		return NewDbStorage(logger, dbDSN)
+		return NewDBStorage(logger, dbDSN)
 	}
 
 	if fsp == "" {
