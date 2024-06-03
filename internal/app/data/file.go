@@ -90,3 +90,7 @@ func (s *FileStorage) StoreShortURL(shortURL string, originalURL string) error {
 func (s *FileStorage) GetOriginalURL(shortURL string) (string, error) {
 	return s.baseStorage.GetOriginalURL(shortURL)
 }
+
+func (s *FileStorage) Close() error {
+	return nil
+}

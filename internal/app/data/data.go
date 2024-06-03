@@ -7,9 +7,14 @@ import (
 type Storager interface {
 	StoreShortURL(shortURL string, originalURL string) error
 	GetOriginalURL(shortURL string) (string, error)
+	Close() error
 }
 
-func NewStorage(logger *zap.Logger, fsp string) (Storager, error) {
+func NewStorage(logger *zap.Logger, fsp, dbDSN string) (Storager, error) {
+	if dbDSN != "" {
+		return NewDBStorage(logger, dbDSN)
+	}
+
 	if fsp == "" {
 		return NewBaseStorage(), nil
 	}

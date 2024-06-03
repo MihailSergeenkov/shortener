@@ -28,6 +28,10 @@ func (s *MockStorage) StoreShortURL(shortURL string, originalURL string) error {
 	return nil
 }
 
+func (s *MockStorage) Close() error {
+	return nil
+}
+
 func closeBody(t *testing.T, r *http.Response) {
 	t.Helper()
 	err := r.Body.Close()
