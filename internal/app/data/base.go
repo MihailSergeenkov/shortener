@@ -49,3 +49,7 @@ func (s *BaseStorage) GetOriginalURL(shortURL string) (string, error) {
 
 	return u.OriginalURL, nil
 }
+
+func (s *BaseStorage) Close() error {
+	return nil
+}

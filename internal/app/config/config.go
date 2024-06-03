@@ -13,6 +13,7 @@ type Settings struct {
 	BaseURL         string        `env:"BASE_URL"`
 	FileStoragePath string        `env:"FILE_STORAGE_PATH"`
 	LogLevel        zapcore.Level `env:"LOG_LEVEL"`
+	DatabaseDSN     string        `env:"DATABASE_DSN"`
 }
 
 var Params Settings = Settings{LogLevel: zapcore.ErrorLevel}
@@ -32,6 +33,7 @@ func ParseFlags() error {
 	})
 
 	flag.StringVar(&Params.FileStoragePath, "f", "/tmp/short-url-db.json", "file storage path")
+	flag.StringVar(&Params.DatabaseDSN, "d", "", "database DSN")
 
 	flag.Parse()
 
