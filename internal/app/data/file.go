@@ -2,6 +2,7 @@ package data
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -57,7 +58,7 @@ func NewFileStorage(logger *zap.Logger, fsp string) (*FileStorage, error) {
 	return &storage, nil
 }
 
-func (s *FileStorage) StoreShortURL(shortURL string, originalURL string) error {
+func (s *FileStorage) StoreShortURL(ctx context.Context, shortURL string, originalURL string) error {
 	file, err := os.OpenFile(s.fileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, filePerm)
 	if err != nil {
 		return fmt.Errorf("failed to open file storage: %w", err)
@@ -71,7 +72,7 @@ func (s *FileStorage) StoreShortURL(shortURL string, originalURL string) error {
 		}
 	}()
 
-	baseStoreErr := s.baseStorage.StoreShortURL(shortURL, originalURL)
+	baseStoreErr := s.baseStorage.StoreShortURL(ctx, shortURL, originalURL)
 	if baseStoreErr != nil {
 		return fmt.Errorf("failed to add url: %w", baseStoreErr)
 	}
@@ -87,6 +88,10 @@ func (s *FileStorage) StoreShortURL(shortURL string, originalURL string) error {
 	return nil
 }
 
-func (s *FileStorage) GetOriginalURL(shortURL string) (string, error) {
-	return s.baseStorage.GetOriginalURL(shortURL)
+func (s *FileStorage) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
+	return s.baseStorage.GetOriginalURL(ctx, shortURL)
+}
+
+func (s *FileStorage) Close() error {
+	return nil
 }

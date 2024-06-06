@@ -23,7 +23,7 @@ func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 			return
 		}
 
-		shortURL, err := services.AddShortURL(s, string(body))
+		shortURL, err := services.AddShortURL(r.Context(), s, string(body))
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -61,7 +61,7 @@ func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 			return
 		}
 
-		shortURL, err := services.AddShortURL(s, req.URL)
+		shortURL, err := services.AddShortURL(r.Context(), s, req.URL)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
