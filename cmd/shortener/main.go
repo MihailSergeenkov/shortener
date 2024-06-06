@@ -31,7 +31,7 @@ func run() error {
 
 	l.Info("Running server on", zap.String("addr", config.Params.RunAddr))
 
-	s, err := data.NewStorage(l, config.Params.FileStoragePath, config.Params.DatabaseDSN)
+	s, err := data.NewStorage(l, config.Params)
 	if err != nil {
 		return fmt.Errorf("storage error: %w", err)
 	}

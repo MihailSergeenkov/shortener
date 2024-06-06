@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
@@ -16,14 +17,14 @@ const (
 
 var ErrMaxRetry = errors.New("generation attempts exceeded")
 
-func AddShortURL(s data.Storager, originalURL string) (string, error) {
+func AddShortURL(ctx context.Context, s data.Storager, originalURL string) (string, error) {
 	for range maxRetry {
 		shortURL, err := generateShortURL()
 		if err != nil {
 			return "", fmt.Errorf("failed to generate short URL: %w", err)
 		}
 
-		storeErr := s.StoreShortURL(shortURL, originalURL)
+		storeErr := s.StoreShortURL(ctx, shortURL, originalURL)
 
 		if storeErr != nil {
 			continue

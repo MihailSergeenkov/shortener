@@ -16,7 +16,7 @@ func PingHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 			return
 		}
 
-		err := db.Ping()
+		err := db.Pool.Ping(r.Context())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			l.Error("failed to connect to DB", zap.Error(err))

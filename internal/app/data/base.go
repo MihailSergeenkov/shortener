@@ -1,18 +1,13 @@
 package data
 
 import (
-	"errors"
+	"context"
 	"fmt"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/models"
 )
 
 const initSize int = 100
-
-var (
-	ErrURLNotFound          = errors.New("url not found")
-	ErrShortURLAlreadyExist = errors.New("short url already exist")
-)
 
 type BaseStorage struct {
 	urls map[string]models.URL
@@ -24,7 +19,7 @@ func NewBaseStorage() *BaseStorage {
 	}
 }
 
-func (s *BaseStorage) StoreShortURL(shortURL string, originalURL string) error {
+func (s *BaseStorage) StoreShortURL(_ context.Context, shortURL string, originalURL string) error {
 	if _, ok := s.urls[shortURL]; ok {
 		return ErrShortURLAlreadyExist
 	}
@@ -40,7 +35,7 @@ func (s *BaseStorage) StoreShortURL(shortURL string, originalURL string) error {
 	return nil
 }
 
-func (s *BaseStorage) GetOriginalURL(shortURL string) (string, error) {
+func (s *BaseStorage) GetOriginalURL(_ context.Context, shortURL string) (string, error) {
 	u, ok := s.urls[shortURL]
 
 	if !ok {
