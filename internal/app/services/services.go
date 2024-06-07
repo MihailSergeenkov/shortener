@@ -6,7 +6,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/url"
 
+	"github.com/MihailSergeenkov/shortener/internal/app/config"
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"github.com/MihailSergeenkov/shortener/internal/app/models"
 )
@@ -47,17 +49,23 @@ func AddBatchShortURL(ctx context.Context, s data.Storager, req models.BatchRequ
 			return models.BatchResponse{}, fmt.Errorf("failed to generate short URL: %w", err)
 		}
 
-		url := models.URL{
+		u := models.URL{
 			ShortURL:    shortURL,
 			OriginalURL: reqData.OriginalURL,
 		}
 
+		result, err := url.JoinPath(config.Params.BaseURL, shortURL)
+
+		if err != nil {
+			return models.BatchResponse{}, fmt.Errorf("failed to construct URL: %w", err)
+		}
+
 		respData := models.BatchDataResponse{
-			ShortURL:      shortURL,
+			ShortURL:      result,
 			CorrelationID: reqData.CorrelationID,
 		}
 
-		arrURLs = append(arrURLs, url)
+		arrURLs = append(arrURLs, u)
 		resp = append(resp, respData)
 	}
 
