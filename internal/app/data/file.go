@@ -15,9 +15,9 @@ import (
 const filePerm fs.FileMode = 0o600
 
 type FileStorage struct {
-	baseStorage     BaseStorage
 	logger          *zap.Logger
 	fileStoragePath string
+	baseStorage     BaseStorage
 }
 
 func NewFileStorage(logger *zap.Logger, fsp string) (*FileStorage, error) {
@@ -88,7 +88,7 @@ func (s *FileStorage) StoreShortURL(ctx context.Context, shortURL string, origin
 	return nil
 }
 
-func (s *FileStorage) StoreShortURLs(ctx context.Context, URLs []models.URL) error {
+func (s *FileStorage) StoreShortURLs(ctx context.Context, urls []models.URL) error {
 	file, err := os.OpenFile(s.fileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, filePerm)
 	if err != nil {
 		return fmt.Errorf("failed to open file storage: %w", err)
@@ -102,14 +102,14 @@ func (s *FileStorage) StoreShortURLs(ctx context.Context, URLs []models.URL) err
 		}
 	}()
 
-	baseStoreErr := s.baseStorage.StoreShortURLs(ctx, URLs)
+	baseStoreErr := s.baseStorage.StoreShortURLs(ctx, urls)
 	if baseStoreErr != nil {
 		return fmt.Errorf("failed to add urls: %w", baseStoreErr)
 	}
 
 	encoder := json.NewEncoder(file)
 
-	for _, v := range URLs {
+	for _, v := range urls {
 		url := s.baseStorage.urls[v.ShortURL]
 		encoderErr := encoder.Encode(&url)
 

@@ -11,8 +11,8 @@ import (
 const initSize int = 100
 
 type BaseStorage struct {
-	sync.RWMutex
 	urls map[string]models.URL
+	mu   sync.RWMutex
 }
 
 func NewBaseStorage() *BaseStorage {
@@ -37,11 +37,11 @@ func (s *BaseStorage) StoreShortURL(_ context.Context, shortURL string, original
 	return nil
 }
 
-func (s *BaseStorage) StoreShortURLs(_ context.Context, URLs []models.URL) error {
-	s.RLock()
-	s.Lock()
+func (s *BaseStorage) StoreShortURLs(_ context.Context, urls []models.URL) error {
+	s.mu.RLock()
+	s.mu.Lock()
 
-	for _, url := range URLs {
+	for _, url := range urls {
 		if _, ok := s.urls[url.ShortURL]; ok {
 			return ErrShortURLAlreadyExist
 		}
@@ -49,13 +49,13 @@ func (s *BaseStorage) StoreShortURLs(_ context.Context, URLs []models.URL) error
 
 	lastID := len(s.urls)
 
-	for i, url := range URLs {
+	for i, url := range urls {
 		url.ID = uint(lastID + i)
 		s.urls[url.ShortURL] = url
 	}
 
-	s.Unlock()
-	s.RUnlock()
+	s.mu.Unlock()
+	s.mu.RUnlock()
 
 	return nil
 }

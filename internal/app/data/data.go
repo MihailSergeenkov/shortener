@@ -16,7 +16,7 @@ var (
 
 type Storager interface {
 	StoreShortURL(ctx context.Context, shortURL string, originalURL string) error
-	StoreShortURLs(ctx context.Context, URLs []models.URL) error
+	StoreShortURLs(ctx context.Context, urls []models.URL) error
 	GetOriginalURL(ctx context.Context, shortURL string) (string, error)
 	Close() error
 }

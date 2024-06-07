@@ -47,13 +47,13 @@ func (s *DBStorage) StoreShortURL(ctx context.Context, shortURL string, original
 	return nil
 }
 
-func (s *DBStorage) StoreShortURLs(ctx context.Context, URLs []models.URL) error {
+func (s *DBStorage) StoreShortURLs(ctx context.Context, urls []models.URL) error {
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to start transaction: %w", err)
 	}
 
-	for _, url := range URLs {
+	for _, url := range urls {
 		_, err := tx.Exec(ctx, stmt, url.ShortURL, url.OriginalURL)
 
 		if err != nil {

@@ -29,7 +29,7 @@ func (s *MockStorage) StoreShortURL(_ context.Context, shortURL string, original
 	return nil
 }
 
-func (s *MockStorage) StoreShortURLs(_ context.Context, URLs []models.URL) error {
+func (s *MockStorage) StoreShortURLs(_ context.Context, urls []models.URL) error {
 	return nil
 }
 
