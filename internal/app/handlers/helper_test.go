@@ -29,6 +29,10 @@ func (s *MockStorage) StoreShortURL(_ context.Context, shortURL string, original
 	return nil
 }
 
+func (s *MockStorage) StoreShortURLs(_ context.Context, URLs []models.URL) error {
+	return nil
+}
+
 func (s *MockStorage) Close() error {
 	return nil
 }

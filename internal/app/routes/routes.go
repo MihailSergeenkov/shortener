@@ -20,8 +20,9 @@ func NewRouter(l *zap.Logger, s data.Storager) chi.Router {
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.AllowContentType("application/json"))
 
-			r.Route("/api", func(r chi.Router) {
-				r.Post("/shorten", handlers.APIAddHandler(l, s))
+			r.Route("/api/shorten", func(r chi.Router) {
+				r.Post("/", handlers.APIAddHandler(l, s))
+				r.Post("/batch", handlers.APIAddBatchHandler(l, s))
 			})
 		})
 	})

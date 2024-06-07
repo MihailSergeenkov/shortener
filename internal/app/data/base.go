@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/models"
 )
@@ -10,6 +11,7 @@ import (
 const initSize int = 100
 
 type BaseStorage struct {
+	sync.RWMutex
 	urls map[string]models.URL
 }
 
@@ -31,6 +33,29 @@ func (s *BaseStorage) StoreShortURL(_ context.Context, shortURL string, original
 	}
 
 	s.urls[shortURL] = url
+
+	return nil
+}
+
+func (s *BaseStorage) StoreShortURLs(_ context.Context, URLs []models.URL) error {
+	s.RLock()
+	s.Lock()
+
+	for _, url := range URLs {
+		if _, ok := s.urls[url.ShortURL]; ok {
+			return ErrShortURLAlreadyExist
+		}
+	}
+
+	lastID := len(s.urls)
+
+	for i, url := range URLs {
+		url.ID = uint(lastID + i)
+		s.urls[url.ShortURL] = url
+	}
+
+	s.Unlock()
+	s.RUnlock()
 
 	return nil
 }

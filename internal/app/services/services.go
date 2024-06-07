@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
+	"github.com/MihailSergeenkov/shortener/internal/app/models"
 )
 
 const (
@@ -34,6 +35,37 @@ func AddShortURL(ctx context.Context, s data.Storager, originalURL string) (stri
 	}
 
 	return "", fmt.Errorf("%w for original URL %s", ErrMaxRetry, originalURL)
+}
+
+func AddBatchShortURL(ctx context.Context, s data.Storager, req models.BatchRequest) (models.BatchResponse, error) {
+	arrURLs := []models.URL{}
+	resp := models.BatchResponse{}
+
+	for _, reqData := range req {
+		shortURL, err := generateShortURL()
+		if err != nil {
+			return models.BatchResponse{}, fmt.Errorf("failed to generate short URL: %w", err)
+		}
+
+		url := models.URL{
+			ShortURL:    shortURL,
+			OriginalURL: reqData.OriginalURL,
+		}
+
+		respData := models.BatchDataResponse{
+			ShortURL:      shortURL,
+			CorrelationID: reqData.CorrelationID,
+		}
+
+		arrURLs = append(arrURLs, url)
+		resp = append(resp, respData)
+	}
+
+	if storeErr := s.StoreShortURLs(ctx, arrURLs); storeErr != nil {
+		return models.BatchResponse{}, fmt.Errorf("failed to store short URLs: %w", storeErr)
+	}
+
+	return resp, nil
 }
 
 func generateShortURL() (string, error) {

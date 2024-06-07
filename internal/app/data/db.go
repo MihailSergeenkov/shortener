@@ -18,6 +18,8 @@ type DBStorage struct {
 	logger *zap.Logger
 }
 
+const stmt = `INSERT INTO urls (short_url, original_url) VALUES ($1, $2)`
+
 func NewDBStorage(logger *zap.Logger, dbDSN string) (*DBStorage, error) {
 	ctx := context.Background()
 
@@ -37,11 +39,35 @@ func NewDBStorage(logger *zap.Logger, dbDSN string) (*DBStorage, error) {
 }
 
 func (s *DBStorage) StoreShortURL(ctx context.Context, shortURL string, originalURL string) error {
-	const stmt = `INSERT INTO urls (short_url, original_url) VALUES ($1, $2)`
-
 	_, err := s.Pool.Exec(ctx, stmt, shortURL, originalURL)
 	if err != nil {
 		return fmt.Errorf("failed to insert data: %w", err)
+	}
+
+	return nil
+}
+
+func (s *DBStorage) StoreShortURLs(ctx context.Context, URLs []models.URL) error {
+	tx, err := s.Pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+
+	for _, url := range URLs {
+		_, err := tx.Exec(ctx, stmt, url.ShortURL, url.OriginalURL)
+
+		if err != nil {
+			rErr := tx.Rollback(ctx)
+			if rErr != nil {
+				s.logger.Error("failed to rollback the transaction", zap.Error(err))
+			}
+			return fmt.Errorf("failed to exec transaction: %w", err)
+		}
+	}
+
+	cErr := tx.Commit(ctx)
+	if cErr != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil

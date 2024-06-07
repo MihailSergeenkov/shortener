@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
+	"github.com/MihailSergeenkov/shortener/internal/app/models"
 	"go.uber.org/zap"
 )
 
@@ -15,6 +16,7 @@ var (
 
 type Storager interface {
 	StoreShortURL(ctx context.Context, shortURL string, originalURL string) error
+	StoreShortURLs(ctx context.Context, URLs []models.URL) error
 	GetOriginalURL(ctx context.Context, shortURL string) (string, error)
 	Close() error
 }
