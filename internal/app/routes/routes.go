@@ -13,14 +13,16 @@ func NewRouter(l *zap.Logger, s data.Storager) chi.Router {
 	r.Use(withRequestLogging(l), gzipMiddleware(l))
 
 	r.Route("/", func(r chi.Router) {
+		r.Get("/ping", handlers.PingHandler(l, s))
 		r.Post("/", handlers.AddHandler(l, s))
 		r.Get("/{id}", handlers.FetchHandler(l, s))
 
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.AllowContentType("application/json"))
 
-			r.Route("/api", func(r chi.Router) {
-				r.Post("/shorten", handlers.APIAddHandler(l, s))
+			r.Route("/api/shorten", func(r chi.Router) {
+				r.Post("/", handlers.APIAddHandler(l, s))
+				r.Post("/batch", handlers.APIAddBatchHandler(l, s))
 			})
 		})
 	})

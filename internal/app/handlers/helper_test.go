@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
@@ -14,7 +15,7 @@ type MockStorage struct {
 
 var originalURL = "https://ya.ru/some"
 
-func (s *MockStorage) GetOriginalURL(shortURL string) (string, error) {
+func (s *MockStorage) GetOriginalURL(_ context.Context, shortURL string) (string, error) {
 	u, present := s.urls[shortURL]
 
 	if !present {
@@ -24,7 +25,15 @@ func (s *MockStorage) GetOriginalURL(shortURL string) (string, error) {
 	return u.OriginalURL, nil
 }
 
-func (s *MockStorage) StoreShortURL(shortURL string, originalURL string) error {
+func (s *MockStorage) StoreShortURL(_ context.Context, shortURL string, originalURL string) error {
+	return nil
+}
+
+func (s *MockStorage) StoreShortURLs(_ context.Context, urls []models.URL) error {
+	return nil
+}
+
+func (s *MockStorage) Close() error {
 	return nil
 }
 
