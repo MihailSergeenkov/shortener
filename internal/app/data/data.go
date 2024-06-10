@@ -3,7 +3,6 @@ package data
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
 	"github.com/MihailSergeenkov/shortener/internal/app/models"
@@ -15,16 +14,16 @@ var (
 	ErrShortURLAlreadyExist = errors.New("short url already exist")
 )
 
-type ErrOriginalURLAlreadyExist struct {
+type OriginalURLAlreadyExistError struct {
 	ShortURL string
 }
 
-func (e *ErrOriginalURLAlreadyExist) Error() string {
-	return fmt.Sprintf("original url already exist")
+func (e *OriginalURLAlreadyExistError) Error() string {
+	return "original url already exist"
 }
 
-func newErrOriginalURLAlreadyExist(url string) error {
-	return &ErrOriginalURLAlreadyExist{
+func newOriginalURLAlreadyExistError(url string) error {
+	return &OriginalURLAlreadyExistError{
 		ShortURL: url,
 	}
 }

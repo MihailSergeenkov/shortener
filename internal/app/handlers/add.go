@@ -14,6 +14,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const constructURLErrStr = "failed to construct URL"
+
 func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
@@ -27,14 +29,14 @@ func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 		shortURL, err := services.AddShortURL(r.Context(), s, string(body))
 
 		if err != nil {
-			var origErr *data.ErrOriginalURLAlreadyExist
+			var origErr *data.OriginalURLAlreadyExistError
 			if errors.As(err, &origErr) {
 				w.WriteHeader(http.StatusConflict)
 				result, err := url.JoinPath(config.Params.BaseURL, origErr.ShortURL)
 
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
-					l.Error("failed to construct URL", zap.Error(err))
+					l.Error(constructURLErrStr, zap.Error(err))
 					return
 				}
 				_, err = w.Write([]byte(result))
@@ -56,7 +58,7 @@ func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			l.Error("failed to construct URL", zap.Error(err))
+			l.Error(constructURLErrStr, zap.Error(err))
 			return
 		}
 
@@ -85,14 +87,14 @@ func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 		shortURL, err := services.AddShortURL(r.Context(), s, req.URL)
 
 		if err != nil {
-			var origErr *data.ErrOriginalURLAlreadyExist
+			var origErr *data.OriginalURLAlreadyExistError
 			if errors.As(err, &origErr) {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusConflict)
 				result, err := url.JoinPath(config.Params.BaseURL, origErr.ShortURL)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
-					l.Error("failed to construct URL", zap.Error(err))
+					l.Error(constructURLErrStr, zap.Error(err))
 					return
 				}
 
@@ -116,7 +118,7 @@ func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			l.Error("failed to construct URL", zap.Error(err))
+			l.Error(constructURLErrStr, zap.Error(err))
 			return
 		}
 

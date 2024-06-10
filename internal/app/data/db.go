@@ -44,7 +44,7 @@ func (s *DBStorage) StoreShortURL(ctx context.Context, shortURL string, original
 		return fmt.Errorf("failed to check present original URL: %w", getErr)
 	}
 	if url != "" {
-		return newErrOriginalURLAlreadyExist(url)
+		return newOriginalURLAlreadyExistError(url)
 	}
 
 	_, err := s.Pool.Exec(ctx, stmt, shortURL, originalURL)
