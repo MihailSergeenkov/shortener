@@ -39,12 +39,41 @@ func NewDBStorage(logger *zap.Logger, dbDSN string) (*DBStorage, error) {
 }
 
 func (s *DBStorage) StoreShortURL(ctx context.Context, shortURL string, originalURL string) error {
+	url, getErr := s.getShortURL(ctx, originalURL)
+	if getErr != nil {
+		return fmt.Errorf("failed to check present original URL: %w", getErr)
+	}
+	if url != "" {
+		return newErrOriginalURLAlreadyExist(url)
+	}
+
 	_, err := s.Pool.Exec(ctx, stmt, shortURL, originalURL)
 	if err != nil {
 		return fmt.Errorf("failed to insert data: %w", err)
 	}
 
 	return nil
+}
+
+func (s *DBStorage) getShortURL(ctx context.Context, originalURL string) (string, error) {
+	const queryStmt = `SELECT id, short_url, original_url
+		FROM urls
+		WHERE original_url = $1
+		LIMIT 1`
+
+	row := s.Pool.QueryRow(ctx, queryStmt, originalURL)
+
+	var u models.URL
+	err := row.Scan(&u.ID, &u.ShortURL, &u.OriginalURL)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", nil
+		}
+
+		return "", fmt.Errorf("failed to scan a response row: %w", err)
+	}
+
+	return u.ShortURL, nil
 }
 
 func (s *DBStorage) StoreShortURLs(ctx context.Context, urls []models.URL) error {
@@ -137,6 +166,7 @@ func createSchema(ctx context.Context, logger *zap.Logger, db *sql.DB) error {
 			original_url VARCHAR(300) NOT NULL
 		)`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS short_url_index ON urls(short_url)`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS original_url_index ON urls(original_url)`,
 	}
 
 	for _, stmt := range createSchemaStmts {

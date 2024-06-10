@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
 	"github.com/MihailSergeenkov/shortener/internal/app/models"
@@ -13,6 +14,20 @@ var (
 	ErrURLNotFound          = errors.New("url not found")
 	ErrShortURLAlreadyExist = errors.New("short url already exist")
 )
+
+type ErrOriginalURLAlreadyExist struct {
+	ShortURL string
+}
+
+func (e *ErrOriginalURLAlreadyExist) Error() string {
+	return fmt.Sprintf("original url already exist")
+}
+
+func newErrOriginalURLAlreadyExist(url string) error {
+	return &ErrOriginalURLAlreadyExist{
+		ShortURL: url,
+	}
+}
 
 type Storager interface {
 	StoreShortURL(ctx context.Context, shortURL string, originalURL string) error

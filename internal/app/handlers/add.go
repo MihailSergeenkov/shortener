@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -26,6 +27,26 @@ func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 		shortURL, err := services.AddShortURL(r.Context(), s, string(body))
 
 		if err != nil {
+			var origErr *data.ErrOriginalURLAlreadyExist
+			if errors.As(err, &origErr) {
+				w.WriteHeader(http.StatusConflict)
+				result, err := url.JoinPath(config.Params.BaseURL, origErr.ShortURL)
+
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					l.Error("failed to construct URL", zap.Error(err))
+					return
+				}
+				_, err = w.Write([]byte(result))
+
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					l.Error("failed to write response body", zap.Error(err))
+					return
+				}
+				return
+			}
+
 			w.WriteHeader(http.StatusInternalServerError)
 			l.Error("failed to add URL to storage", zap.Error(err))
 			return
@@ -64,6 +85,28 @@ func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 		shortURL, err := services.AddShortURL(r.Context(), s, req.URL)
 
 		if err != nil {
+			var origErr *data.ErrOriginalURLAlreadyExist
+			if errors.As(err, &origErr) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusConflict)
+				result, err := url.JoinPath(config.Params.BaseURL, origErr.ShortURL)
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					l.Error("failed to construct URL", zap.Error(err))
+					return
+				}
+
+				resp := models.Response{Result: result}
+
+				enc := json.NewEncoder(w)
+				if err := enc.Encode(resp); err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					l.Error("error encoding response", zap.Error(err))
+					return
+				}
+				return
+			}
+
 			w.WriteHeader(http.StatusInternalServerError)
 			l.Error("failed to add URL to storage", zap.Error(err))
 			return

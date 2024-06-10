@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"net/url"
 
@@ -13,30 +12,21 @@ import (
 	"github.com/MihailSergeenkov/shortener/internal/app/models"
 )
 
-const (
-	keyBytes int = 8
-	maxRetry int = 5
-)
-
-var ErrMaxRetry = errors.New("generation attempts exceeded")
+const keyBytes int = 8
 
 func AddShortURL(ctx context.Context, s data.Storager, originalURL string) (string, error) {
-	for range maxRetry {
-		shortURL, err := generateShortURL()
-		if err != nil {
-			return "", fmt.Errorf("failed to generate short URL: %w", err)
-		}
-
-		storeErr := s.StoreShortURL(ctx, shortURL, originalURL)
-
-		if storeErr != nil {
-			continue
-		}
-
-		return shortURL, nil
+	shortURL, err := generateShortURL()
+	if err != nil {
+		return "", fmt.Errorf("failed to generate short URL: %w", err)
 	}
 
-	return "", fmt.Errorf("%w for original URL %s", ErrMaxRetry, originalURL)
+	storeErr := s.StoreShortURL(ctx, shortURL, originalURL)
+
+	if storeErr != nil {
+		return "", fmt.Errorf("failed to store short URL: %w", storeErr)
+	}
+
+	return shortURL, nil
 }
 
 func AddBatchShortURL(ctx context.Context, s data.Storager, req models.BatchRequest) (models.BatchResponse, error) {
