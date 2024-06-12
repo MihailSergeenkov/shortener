@@ -107,7 +107,7 @@ func (s *DBStorage) StoreShortURLs(ctx context.Context, urls []models.URL) error
 		return fmt.Errorf("unable to insert batch: %w", err)
 	}
 
-	return result.Close()
+	return nil
 }
 
 func (s *DBStorage) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
@@ -132,7 +132,7 @@ func (s *DBStorage) GetOriginalURL(ctx context.Context, shortURL string) (string
 }
 
 func (s *DBStorage) Ping(ctx context.Context) error {
-	return s.pool.Ping(ctx)
+	return s.pool.Ping(ctx) //nolint:wrapcheck // не нужно оборачивать, это делается на более верхнем уровне
 }
 
 func (s *DBStorage) Close() error {
