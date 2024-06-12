@@ -33,6 +33,10 @@ func (s *MockStorage) StoreShortURLs(_ context.Context, urls []models.URL) error
 	return nil
 }
 
+func (s *MockStorage) Ping(_ context.Context) error {
+	return nil
+}
+
 func (s *MockStorage) Close() error {
 	return nil
 }

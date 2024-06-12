@@ -14,84 +14,49 @@ import (
 )
 
 type DBStorage struct {
-	Pool   *pgxpool.Pool
+	pool   *pgxpool.Pool
 	logger *zap.Logger
 }
 
 const stmt = `INSERT INTO urls (short_url, original_url) VALUES ($1, $2)`
 
-func NewDBStorage(logger *zap.Logger, dbDSN string) (*DBStorage, error) {
-	ctx := context.Background()
-
-	if err := initDB(ctx, logger, dbDSN); err != nil {
-		return nil, fmt.Errorf("failed to initialize a DB: %w", err)
-	}
-
+func NewDBStorage(ctx context.Context, logger *zap.Logger, dbDSN string) (*DBStorage, error) {
 	pool, err := initPool(ctx, logger, dbDSN)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize a connection pool: %w", err)
 	}
 
-	return &DBStorage{
+	s := &DBStorage{
 		logger: logger,
-		Pool:   pool,
-	}, nil
+		pool:   pool,
+	}
+
+	if err := s.initDB(ctx); err != nil {
+		return nil, fmt.Errorf("failed to initialize a DB: %w", err)
+	}
+
+	return s, nil
 }
 
 func (s *DBStorage) StoreShortURL(ctx context.Context, shortURL string, originalURL string) error {
-	url, getErr := s.getShortURL(ctx, originalURL)
+	tx, txErr := s.pool.Begin(ctx)
+	if txErr != nil {
+		return fmt.Errorf("failed to start transaction: %w", txErr)
+	}
+
+	url, exist, getErr := getShortURLForOriginalURL(ctx, tx, originalURL)
 	if getErr != nil {
+		rollbackTx(ctx, tx, s.logger)
 		return fmt.Errorf("failed to check present original URL: %w", getErr)
 	}
-	if url != "" {
+	if exist {
+		rollbackTx(ctx, tx, s.logger)
 		return newOriginalURLAlreadyExistError(url)
 	}
 
-	_, err := s.Pool.Exec(ctx, stmt, shortURL, originalURL)
+	_, err := tx.Exec(ctx, stmt, shortURL, originalURL)
 	if err != nil {
 		return fmt.Errorf("failed to insert data: %w", err)
-	}
-
-	return nil
-}
-
-func (s *DBStorage) getShortURL(ctx context.Context, originalURL string) (string, error) {
-	const queryStmt = `SELECT id, short_url, original_url
-		FROM urls
-		WHERE original_url = $1
-		LIMIT 1`
-
-	row := s.Pool.QueryRow(ctx, queryStmt, originalURL)
-
-	var u models.URL
-	err := row.Scan(&u.ID, &u.ShortURL, &u.OriginalURL)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return "", nil
-		}
-
-		return "", fmt.Errorf("failed to scan a response row: %w", err)
-	}
-
-	return u.ShortURL, nil
-}
-
-func (s *DBStorage) StoreShortURLs(ctx context.Context, urls []models.URL) error {
-	tx, err := s.Pool.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to start transaction: %w", err)
-	}
-
-	for _, url := range urls {
-		_, err := tx.Exec(ctx, stmt, url.ShortURL, url.OriginalURL)
-
-		if err != nil {
-			rErr := tx.Rollback(ctx)
-			if rErr != nil {
-				s.logger.Error("failed to rollback the transaction", zap.Error(err))
-			}
-			return fmt.Errorf("failed to exec transaction: %w", err)
-		}
 	}
 
 	cErr := tx.Commit(ctx)
@@ -102,13 +67,56 @@ func (s *DBStorage) StoreShortURLs(ctx context.Context, urls []models.URL) error
 	return nil
 }
 
+func getShortURLForOriginalURL(ctx context.Context, tx pgx.Tx, originalURL string) (string, bool, error) {
+	const queryStmt = `SELECT id, short_url, original_url
+		FROM urls
+		WHERE original_url = $1
+		LIMIT 1`
+
+	row := tx.QueryRow(ctx, queryStmt, originalURL)
+
+	var u models.URL
+	err := row.Scan(&u.ID, &u.ShortURL, &u.OriginalURL)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", false, nil
+		}
+
+		return "", false, fmt.Errorf("failed to scan a response row: %w", err)
+	}
+
+	return u.ShortURL, true, nil
+}
+
+func (s *DBStorage) StoreShortURLs(ctx context.Context, urls []models.URL) error {
+	batch := &pgx.Batch{}
+
+	for _, url := range urls {
+		batch.Queue(stmt, url.ShortURL, url.OriginalURL)
+	}
+
+	result := s.pool.SendBatch(ctx, batch)
+	defer func() {
+		if err := result.Close(); err != nil {
+			s.logger.Error("failed to close batch result", zap.Error(err))
+		}
+	}()
+
+	_, err := result.Exec()
+	if err != nil {
+		return fmt.Errorf("unable to insert batch: %w", err)
+	}
+
+	return result.Close()
+}
+
 func (s *DBStorage) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
 	const queryStmt = `SELECT id, short_url, original_url
 		FROM urls
 		WHERE short_url = $1
 		LIMIT 1`
 
-	row := s.Pool.QueryRow(ctx, queryStmt, shortURL)
+	row := s.pool.QueryRow(ctx, queryStmt, shortURL)
 
 	var u models.URL
 	err := row.Scan(&u.ID, &u.ShortURL, &u.OriginalURL)
@@ -123,42 +131,34 @@ func (s *DBStorage) GetOriginalURL(ctx context.Context, shortURL string) (string
 	return u.OriginalURL, nil
 }
 
+func (s *DBStorage) Ping(ctx context.Context) error {
+	return s.pool.Ping(ctx)
+}
+
 func (s *DBStorage) Close() error {
-	s.Pool.Close()
+	s.pool.Close()
 	return nil
 }
 
-func initDB(ctx context.Context, logger *zap.Logger, dbDSN string) error {
-	db, err := sql.Open("pgx", dbDSN)
+func (s *DBStorage) initDB(ctx context.Context) error {
+	tx, err := s.pool.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to open db connection: %w", err)
+		return fmt.Errorf("failed to start transaction: %w", err)
 	}
-	defer func() {
-		if err := db.Close(); err != nil {
-			logger.Error("failed to properly close the DB connection", zap.Error(err))
-		}
-	}()
 
-	if err := createSchema(ctx, logger, db); err != nil {
+	if err := s.createSchema(ctx, tx); err != nil {
 		return fmt.Errorf("failed to create the DB schema: %w", err)
 	}
 
+	cErr := tx.Commit(ctx)
+	if cErr != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
 	return nil
 }
 
-func createSchema(ctx context.Context, logger *zap.Logger, db *sql.DB) error {
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("failed to start a transaction: %w", err)
-	}
-	defer func() {
-		if err := tx.Rollback(); err != nil {
-			if !errors.Is(err, sql.ErrTxDone) {
-				logger.Error("failed to rollback the transaction", zap.Error(err))
-			}
-		}
-	}()
-
+func (s *DBStorage) createSchema(ctx context.Context, tx pgx.Tx) error {
 	createSchemaStmts := []string{
 		`CREATE TABLE IF NOT EXISTS urls(
 			id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -170,14 +170,14 @@ func createSchema(ctx context.Context, logger *zap.Logger, db *sql.DB) error {
 	}
 
 	for _, stmt := range createSchemaStmts {
-		if _, err := tx.ExecContext(ctx, stmt); err != nil {
-			return fmt.Errorf("failed to execute statement `%s`: %w", stmt, err)
+		_, err := tx.Exec(ctx, stmt)
+
+		if err != nil {
+			rollbackTx(ctx, tx, s.logger)
+			return fmt.Errorf("failed to exec transaction: %w", err)
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit the transaction: %w", err)
-	}
 	return nil
 }
 
@@ -198,4 +198,12 @@ func initPool(ctx context.Context, logger *zap.Logger, dbDSN string) (*pgxpool.P
 	}
 
 	return pool, nil
+}
+
+func rollbackTx(ctx context.Context, tx pgx.Tx, logger *zap.Logger) {
+	if rErr := tx.Rollback(ctx); rErr != nil {
+		if !errors.Is(rErr, sql.ErrTxDone) {
+			logger.Error("failed to rollback the transaction", zap.Error(rErr))
+		}
+	}
 }

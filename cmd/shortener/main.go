@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -31,7 +32,9 @@ func run() error {
 
 	l.Info("Running server on", zap.String("addr", config.Params.RunAddr))
 
-	s, err := data.NewStorage(l, config.Params)
+	ctx := context.Background()
+
+	s, err := data.NewStorage(ctx, l, config.Params)
 	if err != nil {
 		return fmt.Errorf("storage error: %w", err)
 	}

@@ -32,15 +32,16 @@ type Storager interface {
 	StoreShortURL(ctx context.Context, shortURL string, originalURL string) error
 	StoreShortURLs(ctx context.Context, urls []models.URL) error
 	GetOriginalURL(ctx context.Context, shortURL string) (string, error)
+	Ping(ctx context.Context) error
 	Close() error
 }
 
-func NewStorage(logger *zap.Logger, params config.Settings) (Storager, error) {
+func NewStorage(ctx context.Context, logger *zap.Logger, params config.Settings) (Storager, error) {
 	dbDSN := params.DatabaseDSN
 	fsp := params.FileStoragePath
 
 	if dbDSN != "" {
-		return NewDBStorage(logger, dbDSN)
+		return NewDBStorage(ctx, logger, dbDSN)
 	}
 
 	if fsp == "" {

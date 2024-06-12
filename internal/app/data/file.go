@@ -125,6 +125,10 @@ func (s *FileStorage) GetOriginalURL(ctx context.Context, shortURL string) (stri
 	return s.baseStorage.GetOriginalURL(ctx, shortURL)
 }
 
+func (s *FileStorage) Ping(_ context.Context) error {
+	return nil
+}
+
 func (s *FileStorage) Close() error {
 	return nil
 }

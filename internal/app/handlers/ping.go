@@ -9,14 +9,7 @@ import (
 
 func PingHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		db, ok := s.(*data.DBStorage)
-		if !ok {
-			w.WriteHeader(http.StatusInternalServerError)
-			l.Error("type assertion failed")
-			return
-		}
-
-		err := db.Pool.Ping(r.Context())
+		err := s.Ping(r.Context())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			l.Error("failed to connect to DB", zap.Error(err))
