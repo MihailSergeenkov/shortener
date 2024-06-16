@@ -18,7 +18,17 @@ type DBStorage struct {
 	logger *zap.Logger
 }
 
-const stmt = `INSERT INTO urls (short_url, original_url) VALUES ($1, $2)`
+const stmt = `
+	WITH new_url AS (
+		INSERT INTO urls (short_url, original_url) 
+		VALUES ($1, $2)
+		ON CONFLICT (original_url) DO NOTHING
+		RETURNING short_url
+	)
+	SELECT short_url, true as is_new FROM new_url
+	UNION
+	SELECT short_url, false as is_new FROM urls WHERE original_url = $2
+`
 
 func NewDBStorage(ctx context.Context, logger *zap.Logger, dbDSN string) (*DBStorage, error) {
 	pool, err := initPool(ctx, logger, dbDSN)
@@ -39,53 +49,21 @@ func NewDBStorage(ctx context.Context, logger *zap.Logger, dbDSN string) (*DBSto
 }
 
 func (s *DBStorage) StoreShortURL(ctx context.Context, shortURL string, originalURL string) error {
-	tx, txErr := s.pool.Begin(ctx)
-	if txErr != nil {
-		return fmt.Errorf("failed to start transaction: %w", txErr)
+	row := s.pool.QueryRow(ctx, stmt, shortURL, originalURL)
+
+	var url string
+	var isNewURL bool
+
+	err := row.Scan(&url, &isNewURL)
+	if err != nil {
+		return fmt.Errorf("failed to scan a response row: %w", err)
 	}
 
-	url, exist, getErr := getShortURLForOriginalURL(ctx, tx, originalURL)
-	if getErr != nil {
-		rollbackTx(ctx, tx, s.logger)
-		return fmt.Errorf("failed to check present original URL: %w", getErr)
-	}
-	if exist {
-		rollbackTx(ctx, tx, s.logger)
+	if !isNewURL {
 		return newOriginalURLAlreadyExistError(url)
 	}
 
-	_, err := tx.Exec(ctx, stmt, shortURL, originalURL)
-	if err != nil {
-		return fmt.Errorf("failed to insert data: %w", err)
-	}
-
-	cErr := tx.Commit(ctx)
-	if cErr != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
 	return nil
-}
-
-func getShortURLForOriginalURL(ctx context.Context, tx pgx.Tx, originalURL string) (string, bool, error) {
-	const queryStmt = `SELECT id, short_url, original_url
-		FROM urls
-		WHERE original_url = $1
-		LIMIT 1`
-
-	row := tx.QueryRow(ctx, queryStmt, originalURL)
-
-	var u models.URL
-	err := row.Scan(&u.ID, &u.ShortURL, &u.OriginalURL)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return "", false, nil
-		}
-
-		return "", false, fmt.Errorf("failed to scan a response row: %w", err)
-	}
-
-	return u.ShortURL, true, nil
 }
 
 func (s *DBStorage) StoreShortURLs(ctx context.Context, urls []models.URL) error {
@@ -132,7 +110,11 @@ func (s *DBStorage) GetOriginalURL(ctx context.Context, shortURL string) (string
 }
 
 func (s *DBStorage) Ping(ctx context.Context) error {
-	return s.pool.Ping(ctx) //nolint:wrapcheck // не нужно оборачивать, это делается на более верхнем уровне
+	if err := s.pool.Ping(ctx); err != nil {
+		return fmt.Errorf("failed to ping DB: %w", err)
+	}
+
+	return nil
 }
 
 func (s *DBStorage) Close() error {
@@ -145,6 +127,7 @@ func (s *DBStorage) initDB(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to start transaction: %w", err)
 	}
+	defer rollbackTx(ctx, tx, s.logger)
 
 	if err := s.createSchema(ctx, tx); err != nil {
 		return fmt.Errorf("failed to create the DB schema: %w", err)
@@ -173,7 +156,6 @@ func (s *DBStorage) createSchema(ctx context.Context, tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, stmt)
 
 		if err != nil {
-			rollbackTx(ctx, tx, s.logger)
 			return fmt.Errorf("failed to exec transaction: %w", err)
 		}
 	}
