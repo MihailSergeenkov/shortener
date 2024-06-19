@@ -33,6 +33,10 @@ func (s *MockStorage) StoreShortURLs(_ context.Context, urls []models.URL) error
 	return nil
 }
 
+func (s *MockStorage) FetchUserURLs(_ context.Context) ([]models.URL, error) {
+	return []models.URL{}, nil
+}
+
 func (s *MockStorage) Ping(_ context.Context) error {
 	return nil
 }

@@ -14,6 +14,7 @@ type Settings struct {
 	FileStoragePath string        `env:"FILE_STORAGE_PATH"`
 	DatabaseDSN     string        `env:"DATABASE_DSN"`
 	LogLevel        zapcore.Level `env:"LOG_LEVEL"`
+	SecretKey       string        `env:"SECRET_KEY"`
 }
 
 var Params Settings = Settings{LogLevel: zapcore.ErrorLevel}
@@ -34,6 +35,7 @@ func ParseFlags() error {
 
 	flag.StringVar(&Params.FileStoragePath, "f", "/tmp/short-url-db.json", "file storage path")
 	flag.StringVar(&Params.DatabaseDSN, "d", "", "database DSN")
+	flag.StringVar(&Params.SecretKey, "s", "1234567890", "secret key for generate cookie token")
 
 	flag.Parse()
 

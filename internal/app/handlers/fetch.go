@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
+	"github.com/MihailSergeenkov/shortener/internal/app/services"
 	"go.uber.org/zap"
 )
 
@@ -27,5 +29,32 @@ func FetchHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 
 		w.Header().Set("Location", u)
 		w.WriteHeader(http.StatusTemporaryRedirect)
+	}
+}
+
+func APIFetchUserURLsHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, err := services.FetchUserURLs(r.Context(), s)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			l.Error("failed to fetch URLs from storage", zap.Error(err))
+			return
+		}
+
+		if len(resp) == 0 {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		enc := json.NewEncoder(w)
+		if err := enc.Encode(resp); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			l.Error("error encoding response", zap.Error(err))
+			return
+		}
 	}
 }
