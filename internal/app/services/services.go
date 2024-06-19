@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
-	"github.com/MihailSergeenkov/shortener/internal/app/constants"
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"github.com/MihailSergeenkov/shortener/internal/app/models"
 )
@@ -34,10 +34,10 @@ func AddBatchShortURL(ctx context.Context, s data.Storager, req models.BatchRequ
 	arrURLs := []models.URL{}
 	resp := models.BatchResponse{}
 
-	userID, ok := ctx.Value(constants.KeyUserID).(string)
+	userID, ok := ctx.Value(common.KeyUserID).(string)
 
 	if !ok {
-		return models.BatchResponse{}, fmt.Errorf("failed to fetch user id from context")
+		return models.BatchResponse{}, common.ErrFetchUserIDFromContext
 	}
 
 	for _, reqData := range req {

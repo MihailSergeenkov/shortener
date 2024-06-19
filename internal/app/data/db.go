@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/MihailSergeenkov/shortener/internal/app/constants"
+	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/models"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -50,7 +50,7 @@ func NewDBStorage(ctx context.Context, logger *zap.Logger, dbDSN string) (*DBSto
 }
 
 func (s *DBStorage) StoreShortURL(ctx context.Context, shortURL string, originalURL string) error {
-	row := s.pool.QueryRow(ctx, stmt, shortURL, originalURL, ctx.Value(constants.KeyUserID))
+	row := s.pool.QueryRow(ctx, stmt, shortURL, originalURL, ctx.Value(common.KeyUserID))
 
 	var url string
 	var isNewURL bool
@@ -117,7 +117,7 @@ func (s *DBStorage) FetchUserURLs(ctx context.Context) ([]models.URL, error) {
 
 	urls := []models.URL{}
 
-	rows, err := s.pool.Query(ctx, queryStmt, ctx.Value(constants.KeyUserID))
+	rows, err := s.pool.Query(ctx, queryStmt, ctx.Value(common.KeyUserID))
 	if err != nil {
 		return []models.URL{}, fmt.Errorf("failed to execute query: %w", err)
 	}

@@ -2,14 +2,14 @@ package routes
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math/rand"
 	"net/http"
 
+	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
-	"github.com/MihailSergeenkov/shortener/internal/app/constants"
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
 )
@@ -54,7 +54,7 @@ func setAuthMiddleware(l *zap.Logger) func(next http.Handler) http.Handler {
 				userID = getUserID(authCookie.Value)
 			}
 
-			newContext := context.WithValue(r.Context(), constants.KeyUserID, userID)
+			newContext := context.WithValue(r.Context(), common.KeyUserID, userID)
 			newRequest := r.WithContext(newContext)
 			next.ServeHTTP(w, newRequest)
 		})
@@ -80,7 +80,7 @@ func checkAuthMiddleware(l *zap.Logger) func(next http.Handler) http.Handler {
 				return
 			}
 
-			newContext := context.WithValue(r.Context(), constants.KeyUserID, userID)
+			newContext := context.WithValue(r.Context(), common.KeyUserID, userID)
 			newRequest := r.WithContext(newContext)
 			next.ServeHTTP(w, newRequest)
 		})
@@ -116,7 +116,7 @@ func buildJWTString() (string, error) {
 
 	tokenString, err := token.SignedString([]byte(config.Params.SecretKey))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to signed token: %w", err)
 	}
 
 	return tokenString, nil

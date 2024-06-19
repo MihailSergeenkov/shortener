@@ -34,7 +34,7 @@ func run() error {
 
 	ctx := context.Background()
 
-	s, err := data.NewStorage(ctx, l, config.Params)
+	s, err := data.NewStorage(ctx, l, &config.Params)
 	if err != nil {
 		return fmt.Errorf("storage error: %w", err)
 	}

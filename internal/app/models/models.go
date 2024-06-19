@@ -11,8 +11,8 @@ type Response struct {
 type URL struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
-	ID          uint   `json:"id"`
 	UserID      string `json:"user_id"`
+	ID          uint   `json:"id"`
 }
 
 type BatchRequest []BatchDataRequest

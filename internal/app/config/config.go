@@ -13,8 +13,8 @@ type Settings struct {
 	BaseURL         string        `env:"BASE_URL"`
 	FileStoragePath string        `env:"FILE_STORAGE_PATH"`
 	DatabaseDSN     string        `env:"DATABASE_DSN"`
-	LogLevel        zapcore.Level `env:"LOG_LEVEL"`
 	SecretKey       string        `env:"SECRET_KEY"`
+	LogLevel        zapcore.Level `env:"LOG_LEVEL"`
 }
 
 var Params Settings = Settings{LogLevel: zapcore.ErrorLevel}

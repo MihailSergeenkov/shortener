@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"github.com/MihailSergeenkov/shortener/internal/app/services"
 	"go.uber.org/zap"
@@ -47,13 +48,13 @@ func APIFetchUserURLsHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set(common.ContentTypeHeader, common.JSONContentType)
 		w.WriteHeader(http.StatusOK)
 
 		enc := json.NewEncoder(w)
 		if err := enc.Encode(resp); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			l.Error("error encoding response", zap.Error(err))
+			l.Error(common.EncRespErrStr, zap.Error(err))
 			return
 		}
 	}

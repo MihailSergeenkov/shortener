@@ -37,7 +37,7 @@ type Storager interface {
 	Close() error
 }
 
-func NewStorage(ctx context.Context, logger *zap.Logger, params config.Settings) (Storager, error) {
+func NewStorage(ctx context.Context, logger *zap.Logger, params *config.Settings) (Storager, error) {
 	dbDSN := params.DatabaseDSN
 	fsp := params.FileStoragePath
 

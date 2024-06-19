@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/MihailSergeenkov/shortener/internal/app/constants"
+	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/models"
 )
 
@@ -25,10 +25,10 @@ func (s *BaseStorage) StoreShortURL(ctx context.Context, shortURL string, origin
 		return ErrShortURLAlreadyExist
 	}
 
-	userID, ok := ctx.Value(constants.KeyUserID).(string)
+	userID, ok := ctx.Value(common.KeyUserID).(string)
 
 	if !ok {
-		return fmt.Errorf("failed to fetch user id from context")
+		return common.ErrFetchUserIDFromContext
 	}
 
 	url := models.URL{
@@ -72,7 +72,7 @@ func (s *BaseStorage) GetOriginalURL(_ context.Context, shortURL string) (string
 
 func (s *BaseStorage) FetchUserURLs(ctx context.Context) ([]models.URL, error) {
 	urls := []models.URL{}
-	userID := ctx.Value(constants.KeyUserID)
+	userID := ctx.Value(common.KeyUserID)
 
 	for _, u := range s.urls {
 		if u.UserID == userID {

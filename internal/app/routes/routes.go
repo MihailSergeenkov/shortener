@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"github.com/MihailSergeenkov/shortener/internal/app/handlers"
 	"github.com/go-chi/chi/v5"
@@ -20,7 +21,7 @@ func NewRouter(l *zap.Logger, s data.Storager) chi.Router {
 		r.Get("/{id}", handlers.FetchHandler(l, s))
 
 		r.Group(func(r chi.Router) {
-			r.Use(middleware.AllowContentType("application/json"))
+			r.Use(middleware.AllowContentType(common.JSONContentType))
 
 			r.Route("/api", func(r chi.Router) {
 				r.Route("/shorten", func(r chi.Router) {
@@ -32,7 +33,7 @@ func NewRouter(l *zap.Logger, s data.Storager) chi.Router {
 	})
 
 	r.Group(func(r chi.Router) {
-		r.Use(middleware.AllowContentType("application/json"), checkAuthMiddleware(l))
+		r.Use(middleware.AllowContentType(common.JSONContentType), checkAuthMiddleware(l))
 		r.Get("/api/user/urls", handlers.APIFetchUserURLsHandler(l, s))
 	})
 
