@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/models"
 )
 
@@ -19,15 +20,22 @@ func NewBaseStorage() *BaseStorage {
 	}
 }
 
-func (s *BaseStorage) StoreShortURL(_ context.Context, shortURL string, originalURL string) error {
+func (s *BaseStorage) StoreShortURL(ctx context.Context, shortURL string, originalURL string) error {
 	if _, ok := s.urls[shortURL]; ok {
 		return ErrShortURLAlreadyExist
+	}
+
+	userID, ok := ctx.Value(common.KeyUserID).(string)
+
+	if !ok {
+		return common.ErrFetchUserIDFromContext
 	}
 
 	url := models.URL{
 		ID:          uint(len(s.urls) + 1),
 		ShortURL:    shortURL,
 		OriginalURL: originalURL,
+		UserID:      userID,
 	}
 
 	s.urls[shortURL] = url
@@ -60,6 +68,19 @@ func (s *BaseStorage) GetOriginalURL(_ context.Context, shortURL string) (string
 	}
 
 	return u.OriginalURL, nil
+}
+
+func (s *BaseStorage) FetchUserURLs(ctx context.Context) ([]models.URL, error) {
+	urls := []models.URL{}
+	userID := ctx.Value(common.KeyUserID)
+
+	for _, u := range s.urls {
+		if u.UserID == userID {
+			urls = append(urls, u)
+		}
+	}
+
+	return urls, nil
 }
 
 func (s *BaseStorage) Ping(_ context.Context) error {

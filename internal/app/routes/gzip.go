@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"go.uber.org/zap"
 )
 
@@ -91,8 +92,8 @@ func gzipMiddleware(l *zap.Logger) func(next http.Handler) http.Handler {
 			contentEncoding := r.Header.Get("Content-Encoding")
 			sendsGzip := strings.Contains(contentEncoding, "gzip")
 			if sendsGzip {
-				contentType := r.Header.Get("Content-Type")
-				if !(strings.Contains(contentType, "application/json") || strings.Contains(contentType, "text/html")) {
+				contentType := r.Header.Get(common.ContentTypeHeader)
+				if !(strings.Contains(contentType, common.JSONContentType) || strings.Contains(contentType, "text/html")) {
 					l.Warn("content encoding for bad content type", zap.String("content_type", contentType))
 				}
 

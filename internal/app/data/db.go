@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/models"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -20,8 +21,8 @@ type DBStorage struct {
 
 const stmt = `
 	WITH new_url AS (
-		INSERT INTO urls (short_url, original_url) 
-		VALUES ($1, $2)
+		INSERT INTO urls (short_url, original_url, user_id) 
+		VALUES ($1, $2, $3)
 		ON CONFLICT (original_url) DO NOTHING
 		RETURNING short_url
 	)
@@ -49,7 +50,7 @@ func NewDBStorage(ctx context.Context, logger *zap.Logger, dbDSN string) (*DBSto
 }
 
 func (s *DBStorage) StoreShortURL(ctx context.Context, shortURL string, originalURL string) error {
-	row := s.pool.QueryRow(ctx, stmt, shortURL, originalURL)
+	row := s.pool.QueryRow(ctx, stmt, shortURL, originalURL, ctx.Value(common.KeyUserID))
 
 	var url string
 	var isNewURL bool
@@ -70,7 +71,7 @@ func (s *DBStorage) StoreShortURLs(ctx context.Context, urls []models.URL) error
 	batch := &pgx.Batch{}
 
 	for _, url := range urls {
-		batch.Queue(stmt, url.ShortURL, url.OriginalURL)
+		batch.Queue(stmt, url.ShortURL, url.OriginalURL, url.UserID)
 	}
 
 	result := s.pool.SendBatch(ctx, batch)
@@ -107,6 +108,37 @@ func (s *DBStorage) GetOriginalURL(ctx context.Context, shortURL string) (string
 	}
 
 	return u.OriginalURL, nil
+}
+
+func (s *DBStorage) FetchUserURLs(ctx context.Context) ([]models.URL, error) {
+	const queryStmt = `SELECT id, short_url, original_url, user_id
+		FROM urls
+		WHERE user_id = $1`
+
+	urls := []models.URL{}
+
+	rows, err := s.pool.Query(ctx, queryStmt, ctx.Value(common.KeyUserID))
+	if err != nil {
+		return []models.URL{}, fmt.Errorf("failed to execute query: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var u models.URL
+		err = rows.Scan(&u.ID, &u.ShortURL, &u.OriginalURL, &u.UserID)
+		if err != nil {
+			return []models.URL{}, fmt.Errorf("failed to scan query: %w", err)
+		}
+
+		urls = append(urls, u)
+	}
+
+	rowsErr := rows.Err()
+	if rowsErr != nil {
+		return []models.URL{}, fmt.Errorf("failed to read query: %w", err)
+	}
+
+	return urls, nil
 }
 
 func (s *DBStorage) Ping(ctx context.Context) error {
@@ -150,6 +182,8 @@ func (s *DBStorage) createSchema(ctx context.Context, tx pgx.Tx) error {
 		)`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS short_url_index ON urls(short_url)`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS original_url_index ON urls(original_url)`,
+		`ALTER TABLE urls ADD COLUMN IF NOT EXISTS user_id VARCHAR(200)`,
+		`CREATE INDEX IF NOT EXISTS urls_user_id_index ON urls(user_id)`,
 	}
 
 	for _, stmt := range createSchemaStmts {

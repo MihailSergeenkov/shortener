@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"github.com/MihailSergeenkov/shortener/internal/app/handlers"
 	"github.com/go-chi/chi/v5"
@@ -12,19 +13,28 @@ func NewRouter(l *zap.Logger, s data.Storager) chi.Router {
 	r := chi.NewRouter()
 	r.Use(withRequestLogging(l), gzipMiddleware(l))
 
+	r.Get("/ping", handlers.PingHandler(l, s))
+
 	r.Route("/", func(r chi.Router) {
-		r.Get("/ping", handlers.PingHandler(l, s))
+		r.Use(setAuthMiddleware(l))
 		r.Post("/", handlers.AddHandler(l, s))
 		r.Get("/{id}", handlers.FetchHandler(l, s))
 
 		r.Group(func(r chi.Router) {
-			r.Use(middleware.AllowContentType("application/json"))
+			r.Use(middleware.AllowContentType(common.JSONContentType))
 
-			r.Route("/api/shorten", func(r chi.Router) {
-				r.Post("/", handlers.APIAddHandler(l, s))
-				r.Post("/batch", handlers.APIAddBatchHandler(l, s))
+			r.Route("/api", func(r chi.Router) {
+				r.Route("/shorten", func(r chi.Router) {
+					r.Post("/", handlers.APIAddHandler(l, s))
+					r.Post("/batch", handlers.APIAddBatchHandler(l, s))
+				})
 			})
 		})
+	})
+
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.AllowContentType(common.JSONContentType), checkAuthMiddleware(l))
+		r.Get("/api/user/urls", handlers.APIFetchUserURLsHandler(l, s))
 	})
 
 	return r

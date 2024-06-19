@@ -121,6 +121,10 @@ func (s *FileStorage) StoreShortURLs(ctx context.Context, urls []models.URL) err
 	return nil
 }
 
+func (s *FileStorage) FetchUserURLs(ctx context.Context) ([]models.URL, error) {
+	return s.baseStorage.FetchUserURLs(ctx)
+}
+
 func (s *FileStorage) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
 	return s.baseStorage.GetOriginalURL(ctx, shortURL)
 }
