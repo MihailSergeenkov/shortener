@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -31,10 +32,20 @@ func run() error {
 
 	l.Info("Running server on", zap.String("addr", config.Params.RunAddr))
 
-	s, err := data.NewStorage(l, config.Params.FileStoragePath)
+	ctx := context.Background()
+
+	s, err := data.NewStorage(ctx, l, config.Params)
 	if err != nil {
 		return fmt.Errorf("storage error: %w", err)
 	}
+
+	defer func() {
+		err := s.Close()
+
+		if err != nil {
+			l.Error("failed to close db connection", zap.Error(err))
+		}
+	}()
 
 	r := routes.NewRouter(l, s)
 

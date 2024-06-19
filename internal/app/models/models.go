@@ -13,3 +13,17 @@ type URL struct {
 	OriginalURL string `json:"original_url"`
 	ID          uint   `json:"id"`
 }
+
+type BatchRequest []BatchDataRequest
+
+type BatchDataRequest struct {
+	CorrelationID string `json:"correlation_id"`
+	OriginalURL   string `json:"original_url"`
+}
+
+type BatchResponse []BatchDataResponse
+
+type BatchDataResponse struct {
+	CorrelationID string `json:"correlation_id"`
+	ShortURL      string `json:"short_url"`
+}

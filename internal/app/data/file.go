@@ -2,6 +2,7 @@ package data
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -14,8 +15,8 @@ import (
 const filePerm fs.FileMode = 0o600
 
 type FileStorage struct {
-	baseStorage     BaseStorage
 	logger          *zap.Logger
+	baseStorage     BaseStorage
 	fileStoragePath string
 }
 
@@ -57,7 +58,7 @@ func NewFileStorage(logger *zap.Logger, fsp string) (*FileStorage, error) {
 	return &storage, nil
 }
 
-func (s *FileStorage) StoreShortURL(shortURL string, originalURL string) error {
+func (s *FileStorage) StoreShortURL(ctx context.Context, shortURL string, originalURL string) error {
 	file, err := os.OpenFile(s.fileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, filePerm)
 	if err != nil {
 		return fmt.Errorf("failed to open file storage: %w", err)
@@ -71,7 +72,7 @@ func (s *FileStorage) StoreShortURL(shortURL string, originalURL string) error {
 		}
 	}()
 
-	baseStoreErr := s.baseStorage.StoreShortURL(shortURL, originalURL)
+	baseStoreErr := s.baseStorage.StoreShortURL(ctx, shortURL, originalURL)
 	if baseStoreErr != nil {
 		return fmt.Errorf("failed to add url: %w", baseStoreErr)
 	}
@@ -87,6 +88,47 @@ func (s *FileStorage) StoreShortURL(shortURL string, originalURL string) error {
 	return nil
 }
 
-func (s *FileStorage) GetOriginalURL(shortURL string) (string, error) {
-	return s.baseStorage.GetOriginalURL(shortURL)
+func (s *FileStorage) StoreShortURLs(ctx context.Context, urls []models.URL) error {
+	file, err := os.OpenFile(s.fileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, filePerm)
+	if err != nil {
+		return fmt.Errorf("failed to open file storage: %w", err)
+	}
+
+	defer func() {
+		err := file.Close()
+
+		if err != nil {
+			s.logger.Error("failed to close file storage", zap.Error(err))
+		}
+	}()
+
+	baseStoreErr := s.baseStorage.StoreShortURLs(ctx, urls)
+	if baseStoreErr != nil {
+		return fmt.Errorf("failed to add urls: %w", baseStoreErr)
+	}
+
+	encoder := json.NewEncoder(file)
+
+	for _, v := range urls {
+		url := s.baseStorage.urls[v.ShortURL]
+		encoderErr := encoder.Encode(&url)
+
+		if encoderErr != nil {
+			return fmt.Errorf("failed to dump URL: %w", encoderErr)
+		}
+	}
+
+	return nil
+}
+
+func (s *FileStorage) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
+	return s.baseStorage.GetOriginalURL(ctx, shortURL)
+}
+
+func (s *FileStorage) Ping(_ context.Context) error {
+	return nil
+}
+
+func (s *FileStorage) Close() error {
+	return nil
 }

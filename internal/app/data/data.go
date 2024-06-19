@@ -1,15 +1,49 @@
 package data
 
 import (
+	"context"
+	"errors"
+
+	"github.com/MihailSergeenkov/shortener/internal/app/config"
+	"github.com/MihailSergeenkov/shortener/internal/app/models"
 	"go.uber.org/zap"
 )
 
-type Storager interface {
-	StoreShortURL(shortURL string, originalURL string) error
-	GetOriginalURL(shortURL string) (string, error)
+var (
+	ErrURLNotFound          = errors.New("url not found")
+	ErrShortURLAlreadyExist = errors.New("short url already exist")
+)
+
+type OriginalURLAlreadyExistError struct {
+	ShortURL string
 }
 
-func NewStorage(logger *zap.Logger, fsp string) (Storager, error) {
+func (e *OriginalURLAlreadyExistError) Error() string {
+	return "original url already exist"
+}
+
+func newOriginalURLAlreadyExistError(url string) error {
+	return &OriginalURLAlreadyExistError{
+		ShortURL: url,
+	}
+}
+
+type Storager interface {
+	StoreShortURL(ctx context.Context, shortURL string, originalURL string) error
+	StoreShortURLs(ctx context.Context, urls []models.URL) error
+	GetOriginalURL(ctx context.Context, shortURL string) (string, error)
+	Ping(ctx context.Context) error
+	Close() error
+}
+
+func NewStorage(ctx context.Context, logger *zap.Logger, params config.Settings) (Storager, error) {
+	dbDSN := params.DatabaseDSN
+	fsp := params.FileStoragePath
+
+	if dbDSN != "" {
+		return NewDBStorage(ctx, logger, dbDSN)
+	}
+
 	if fsp == "" {
 		return NewBaseStorage(), nil
 	}
