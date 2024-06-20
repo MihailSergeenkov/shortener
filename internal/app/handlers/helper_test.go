@@ -15,14 +15,14 @@ type MockStorage struct {
 
 var originalURL = "https://ya.ru/some"
 
-func (s *MockStorage) GetOriginalURL(_ context.Context, shortURL string) (string, error) {
+func (s *MockStorage) GetURL(_ context.Context, shortURL string) (models.URL, error) {
 	u, present := s.urls[shortURL]
 
 	if !present {
-		return "", data.ErrURLNotFound
+		return models.URL{}, data.ErrURLNotFound
 	}
 
-	return u.OriginalURL, nil
+	return u, nil
 }
 
 func (s *MockStorage) StoreShortURL(_ context.Context, shortURL string, originalURL string) error {
@@ -35,6 +35,10 @@ func (s *MockStorage) StoreShortURLs(_ context.Context, urls []models.URL) error
 
 func (s *MockStorage) FetchUserURLs(_ context.Context) ([]models.URL, error) {
 	return []models.URL{}, nil
+}
+
+func (s *MockStorage) DeleteShortURLs(ctx context.Context, urls []string) error {
+	return nil
 }
 
 func (s *MockStorage) Ping(_ context.Context) error {

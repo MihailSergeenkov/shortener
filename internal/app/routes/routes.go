@@ -34,7 +34,11 @@ func NewRouter(l *zap.Logger, s data.Storager) chi.Router {
 
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.AllowContentType(common.JSONContentType), checkAuthMiddleware(l))
-		r.Get("/api/user/urls", handlers.APIFetchUserURLsHandler(l, s))
+
+		r.Route("/api/user/urls", func(r chi.Router) {
+			r.Get("/", handlers.APIFetchUserURLsHandler(l, s))
+			r.Delete("/", handlers.APIDeleteUserURLsHandler(l, s))
+		})
 	})
 
 	return r

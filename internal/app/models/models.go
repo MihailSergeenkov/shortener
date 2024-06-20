@@ -13,6 +13,7 @@ type URL struct {
 	OriginalURL string `json:"original_url"`
 	UserID      string `json:"user_id"`
 	ID          uint   `json:"id"`
+	DeletedFlag bool   `json:"is_deleted"`
 }
 
 type BatchRequest []BatchDataRequest

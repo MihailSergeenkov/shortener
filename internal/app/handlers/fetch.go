@@ -15,7 +15,7 @@ import (
 func FetchHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		shortURL := strings.TrimLeft(r.URL.Path, "/")
-		u, err := s.GetOriginalURL(r.Context(), shortURL)
+		u, err := s.GetURL(r.Context(), shortURL)
 
 		if err != nil {
 			if errors.Is(err, data.ErrURLNotFound) {
@@ -28,7 +28,12 @@ func FetchHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Location", u)
+		if u.DeletedFlag {
+			w.WriteHeader(http.StatusGone)
+			return
+		}
+
+		w.Header().Set("Location", u.OriginalURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	}
 }

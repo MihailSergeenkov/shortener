@@ -125,8 +125,41 @@ func (s *FileStorage) FetchUserURLs(ctx context.Context) ([]models.URL, error) {
 	return s.baseStorage.FetchUserURLs(ctx)
 }
 
-func (s *FileStorage) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
-	return s.baseStorage.GetOriginalURL(ctx, shortURL)
+func (s *FileStorage) GetURL(ctx context.Context, shortURL string) (models.URL, error) {
+	return s.baseStorage.GetURL(ctx, shortURL)
+}
+
+func (s *FileStorage) DeleteShortURLs(ctx context.Context, urls []string) error {
+	file, err := os.OpenFile(s.fileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, filePerm)
+	if err != nil {
+		return fmt.Errorf("failed to open file storage: %w", err)
+	}
+
+	defer func() {
+		err := file.Close()
+
+		if err != nil {
+			s.logger.Error("failed to close file storage", zap.Error(err))
+		}
+	}()
+
+	baseStoreErr := s.baseStorage.DeleteShortURLs(ctx, urls)
+	if baseStoreErr != nil {
+		return fmt.Errorf("failed to add urls: %w", baseStoreErr)
+	}
+
+	encoder := json.NewEncoder(file)
+
+	for _, url := range urls {
+		u := s.baseStorage.urls[url]
+		encoderErr := encoder.Encode(&u)
+
+		if encoderErr != nil {
+			return fmt.Errorf("failed to dump URL: %w", encoderErr)
+		}
+	}
+
+	return nil
 }
 
 func (s *FileStorage) Ping(_ context.Context) error {

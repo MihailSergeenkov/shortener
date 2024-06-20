@@ -89,8 +89,32 @@ func (s *DBStorage) StoreShortURLs(ctx context.Context, urls []models.URL) error
 	return nil
 }
 
-func (s *DBStorage) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
-	const queryStmt = `SELECT id, short_url, original_url
+func (s *DBStorage) DeleteShortURLs(ctx context.Context, urls []string) error {
+	const stmt = `UPDATE urls SET is_deleted = true WHERE short_url = $1`
+
+	batch := &pgx.Batch{}
+
+	for _, url := range urls {
+		batch.Queue(stmt, url)
+	}
+
+	result := s.pool.SendBatch(ctx, batch)
+	defer func() {
+		if err := result.Close(); err != nil {
+			s.logger.Error("failed to close batch result", zap.Error(err))
+		}
+	}()
+
+	_, err := result.Exec()
+	if err != nil {
+		return fmt.Errorf("unable to update batch: %w", err)
+	}
+
+	return nil
+}
+
+func (s *DBStorage) GetURL(ctx context.Context, shortURL string) (models.URL, error) {
+	const queryStmt = `SELECT id, short_url, original_url, is_deleted, user_id
 		FROM urls
 		WHERE short_url = $1
 		LIMIT 1`
@@ -98,16 +122,16 @@ func (s *DBStorage) GetOriginalURL(ctx context.Context, shortURL string) (string
 	row := s.pool.QueryRow(ctx, queryStmt, shortURL)
 
 	var u models.URL
-	err := row.Scan(&u.ID, &u.ShortURL, &u.OriginalURL)
+	err := row.Scan(&u.ID, &u.ShortURL, &u.OriginalURL, &u.DeletedFlag, &u.UserID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return "", fmt.Errorf("%w for short URL %s", ErrURLNotFound, shortURL)
+			return models.URL{}, fmt.Errorf("%w for short URL %s", ErrURLNotFound, shortURL)
 		}
 
-		return "", fmt.Errorf("failed to scan a response row: %w", err)
+		return models.URL{}, fmt.Errorf("failed to scan a response row: %w", err)
 	}
 
-	return u.OriginalURL, nil
+	return u, nil
 }
 
 func (s *DBStorage) FetchUserURLs(ctx context.Context) ([]models.URL, error) {
@@ -184,6 +208,7 @@ func (s *DBStorage) createSchema(ctx context.Context, tx pgx.Tx) error {
 		`CREATE UNIQUE INDEX IF NOT EXISTS original_url_index ON urls(original_url)`,
 		`ALTER TABLE urls ADD COLUMN IF NOT EXISTS user_id VARCHAR(200)`,
 		`CREATE INDEX IF NOT EXISTS urls_user_id_index ON urls(user_id)`,
+		`ALTER TABLE urls ADD COLUMN IF NOT EXISTS is_deleted boolean DEFAULT false`,
 	}
 
 	for _, stmt := range createSchemaStmts {

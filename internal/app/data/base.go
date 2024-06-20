@@ -36,6 +36,7 @@ func (s *BaseStorage) StoreShortURL(ctx context.Context, shortURL string, origin
 		ShortURL:    shortURL,
 		OriginalURL: originalURL,
 		UserID:      userID,
+		DeletedFlag: false,
 	}
 
 	s.urls[shortURL] = url
@@ -60,14 +61,14 @@ func (s *BaseStorage) StoreShortURLs(_ context.Context, urls []models.URL) error
 	return nil
 }
 
-func (s *BaseStorage) GetOriginalURL(_ context.Context, shortURL string) (string, error) {
+func (s *BaseStorage) GetURL(_ context.Context, shortURL string) (models.URL, error) {
 	u, ok := s.urls[shortURL]
 
 	if !ok {
-		return "", fmt.Errorf("%w for short URL %s", ErrURLNotFound, shortURL)
+		return models.URL{}, fmt.Errorf("%w for short URL %s", ErrURLNotFound, shortURL)
 	}
 
-	return u.OriginalURL, nil
+	return u, nil
 }
 
 func (s *BaseStorage) FetchUserURLs(ctx context.Context) ([]models.URL, error) {
@@ -81,6 +82,19 @@ func (s *BaseStorage) FetchUserURLs(ctx context.Context) ([]models.URL, error) {
 	}
 
 	return urls, nil
+}
+
+func (s *BaseStorage) DeleteShortURLs(ctx context.Context, urls []string) error {
+	for _, url := range urls {
+		u, ok := s.urls[url]
+		if !ok {
+			return fmt.Errorf("%w for short URL %s", ErrURLNotFound, url)
+		}
+
+		u.DeletedFlag = true
+	}
+
+	return nil
 }
 
 func (s *BaseStorage) Ping(_ context.Context) error {
