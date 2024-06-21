@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"github.com/MihailSergeenkov/shortener/internal/app/services"
 	"go.uber.org/zap"
@@ -15,7 +16,7 @@ func APIDeleteUserURLsHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 		dec := json.NewDecoder(r.Body)
 		if err := dec.Decode(&req); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			l.Error("failed to read request body", zap.Error(err))
+			l.Error(common.ReadReqErrStr, zap.Error(err))
 			return
 		}
 

@@ -23,7 +23,7 @@ func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			l.Error("failed to read request body", zap.Error(err))
+			l.Error(common.ReadReqErrStr, zap.Error(err))
 			return
 		}
 
@@ -81,7 +81,7 @@ func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 		dec := json.NewDecoder(r.Body)
 		if err := dec.Decode(&req); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			l.Error("failed to read request body", zap.Error(err))
+			l.Error(common.ReadReqErrStr, zap.Error(err))
 			return
 		}
 
@@ -144,7 +144,7 @@ func APIAddBatchHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 		dec := json.NewDecoder(r.Body)
 		if err := dec.Decode(&req); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			l.Error("failed to read request body", zap.Error(err))
+			l.Error(common.ReadReqErrStr, zap.Error(err))
 			return
 		}
 

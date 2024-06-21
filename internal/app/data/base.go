@@ -92,6 +92,7 @@ func (s *BaseStorage) DeleteShortURLs(ctx context.Context, urls []string) error 
 		}
 
 		u.DeletedFlag = true
+		s.urls[url] = u
 	}
 
 	return nil

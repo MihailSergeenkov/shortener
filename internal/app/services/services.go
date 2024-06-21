@@ -105,7 +105,7 @@ func FetchUserURLs(ctx context.Context, s data.Storager) (models.UserURLsRespons
 }
 
 func DeleteUserURLs(ctx context.Context, l *zap.Logger, s data.Storager, shortURLs []string) error {
-	var urls []string
+	urls := make([]string, 0)
 
 	inputCh := generator(ctx, shortURLs)
 	channels := fanOut(ctx, l, s, inputCh)
@@ -155,8 +155,8 @@ func fanOut(ctx context.Context, l *zap.Logger, s data.Storager, inputCh chan st
 	numWorkers := 10
 	channels := make([]chan string, numWorkers)
 
-	for i := 0; i < numWorkers; i++ {
-		checkResultCh := check(ctx, l, s, inputCh)
+	for i := range numWorkers {
+		checkResultCh := checkCh(ctx, l, s, inputCh)
 		channels[i] = checkResultCh
 	}
 
@@ -192,7 +192,7 @@ func fanIn(ctx context.Context, resultChs ...chan string) chan string {
 	return finalCh
 }
 
-func check(ctx context.Context, l *zap.Logger, s data.Storager, inputCh chan string) chan string {
+func checkCh(ctx context.Context, l *zap.Logger, s data.Storager, inputCh chan string) chan string {
 	checkRes := make(chan string)
 
 	go func() {
@@ -219,13 +219,13 @@ func check(ctx context.Context, l *zap.Logger, s data.Storager, inputCh chan str
 	return checkRes
 }
 
-func checkURL(ctx context.Context, s data.Storager, url string) (string, error) {
+func checkURL(ctx context.Context, s data.Storager, shortURL string) (string, error) {
 	userID, ok := ctx.Value(common.KeyUserID).(string)
 	if !ok {
 		return "", common.ErrFetchUserIDFromContext
 	}
 
-	u, err := s.GetURL(ctx, url)
+	u, err := s.GetURL(ctx, shortURL)
 	if err != nil {
 		return "", fmt.Errorf("failed to get URL: %w", err)
 	}
@@ -234,5 +234,5 @@ func checkURL(ctx context.Context, s data.Storager, url string) (string, error) 
 		return "", common.ErrPermDenied
 	}
 
-	return url, nil
+	return shortURL, nil
 }
