@@ -98,6 +98,10 @@ func (s *BaseStorage) DeleteShortURLs(ctx context.Context, urls []string) error 
 	return nil
 }
 
+func (s *BaseStorage) DropDeletedURLs(_ context.Context) error {
+	return nil
+}
+
 func (s *BaseStorage) Ping(_ context.Context) error {
 	return nil
 }

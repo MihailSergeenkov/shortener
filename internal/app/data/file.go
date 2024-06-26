@@ -140,6 +140,10 @@ func (s *FileStorage) DeleteShortURLs(ctx context.Context, urls []string) error 
 	return nil
 }
 
+func (s *FileStorage) DropDeletedURLs(_ context.Context) error {
+	return nil
+}
+
 func (s *FileStorage) Ping(_ context.Context) error {
 	return nil
 }

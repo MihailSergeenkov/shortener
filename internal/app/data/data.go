@@ -34,6 +34,7 @@ type Storager interface {
 	GetURL(ctx context.Context, shortURL string) (models.URL, error)
 	FetchUserURLs(ctx context.Context) ([]models.URL, error)
 	DeleteShortURLs(ctx context.Context, urls []string) error
+	DropDeletedURLs(ctx context.Context) error
 	Ping(ctx context.Context) error
 	Close() error
 }

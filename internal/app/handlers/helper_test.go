@@ -41,6 +41,10 @@ func (s *MockStorage) DeleteShortURLs(ctx context.Context, urls []string) error 
 	return nil
 }
 
+func (s *MockStorage) DropDeletedURLs(_ context.Context) error {
+	return nil
+}
+
 func (s *MockStorage) Ping(_ context.Context) error {
 	return nil
 }

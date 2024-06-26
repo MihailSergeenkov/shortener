@@ -24,20 +24,19 @@ const keyBytes int = 8
 func setAuthMiddleware(l *zap.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authCookie, cookieErr := r.Cookie("AUTH_TOKEN")
+			authCookie, err := r.Cookie("AUTH_TOKEN")
 
-			if cookieErr != nil {
-				if errors.Is(cookieErr, http.ErrNoCookie) {
-					var err error
-					authCookie, err = setAuthCookie(w)
-					if err != nil {
-						w.WriteHeader(http.StatusInternalServerError)
-						l.Error("failed to build auth token", zap.Error(err))
-						return
-					}
-				} else {
+			if err != nil {
+				if !errors.Is(err, http.ErrNoCookie) {
 					w.WriteHeader(http.StatusInternalServerError)
-					l.Error("failed to fetch cookie", zap.Error(cookieErr))
+					l.Error("failed to fetch cookie", zap.Error(err))
+					return
+				}
+
+				authCookie, err = setAuthCookie(w)
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					l.Error("failed to build auth token", zap.Error(err))
 					return
 				}
 			}

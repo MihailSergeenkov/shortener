@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"sync"
+	"time"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
@@ -17,6 +17,7 @@ import (
 )
 
 const keyBytes int = 8
+const dropPeriod = 10 // in minutes
 
 func AddShortURL(ctx context.Context, s data.Storager, originalURL string) (string, error) {
 	shortURL, err := generateShortURL()
@@ -108,8 +109,7 @@ func DeleteUserURLs(ctx context.Context, l *zap.Logger, s data.Storager, shortUR
 	urls := make([]string, 0)
 
 	inputCh := generator(ctx, shortURLs)
-	channels := fanOut(ctx, l, s, inputCh)
-	checkResultCh := fanIn(ctx, channels...)
+	checkResultCh := checkCh(ctx, l, s, inputCh)
 
 	for url := range checkResultCh {
 		urls = append(urls, url)
@@ -121,6 +121,23 @@ func DeleteUserURLs(ctx context.Context, l *zap.Logger, s data.Storager, shortUR
 	}
 
 	return nil
+}
+
+func BackgroundJob(ctx context.Context, l *zap.Logger, s data.Storager) {
+	ticker := time.NewTicker(dropPeriod * time.Minute)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			err := s.DropDeletedURLs(ctx)
+
+			if err != nil {
+				l.Error("failed to drop URLs from storage", zap.Error(err))
+			}
+		}
+	}
 }
 
 func generateShortURL() (string, error) {
@@ -149,47 +166,6 @@ func generator(ctx context.Context, shortURLs []string) chan string {
 	}()
 
 	return inputCh
-}
-
-func fanOut(ctx context.Context, l *zap.Logger, s data.Storager, inputCh chan string) []chan string {
-	numWorkers := 10
-	channels := make([]chan string, numWorkers)
-
-	for i := range numWorkers {
-		checkResultCh := checkCh(ctx, l, s, inputCh)
-		channels[i] = checkResultCh
-	}
-
-	return channels
-}
-
-func fanIn(ctx context.Context, resultChs ...chan string) chan string {
-	finalCh := make(chan string)
-
-	var wg sync.WaitGroup
-
-	for _, ch := range resultChs {
-		wg.Add(1)
-
-		go func(ch chan string) {
-			defer wg.Done()
-
-			for url := range ch {
-				select {
-				case <-ctx.Done():
-					return
-				case finalCh <- url:
-				}
-			}
-		}(ch)
-	}
-
-	go func() {
-		wg.Wait()
-		close(finalCh)
-	}()
-
-	return finalCh
 }
 
 func checkCh(ctx context.Context, l *zap.Logger, s data.Storager, inputCh chan string) chan string {

@@ -2,9 +2,9 @@ package common
 
 import "errors"
 
-type ContextValueKey string
+type ContextValueKey int
 
-const KeyUserID ContextValueKey = "userID"
+const KeyUserID ContextValueKey = iota
 
 var ErrFetchUserIDFromContext = errors.New("failed to fetch user id from context")
 var ErrPermDenied = errors.New("permission denied for url")
