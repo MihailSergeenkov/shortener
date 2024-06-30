@@ -11,6 +11,7 @@ import (
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"github.com/MihailSergeenkov/shortener/internal/app/logger"
 	"github.com/MihailSergeenkov/shortener/internal/app/routes"
+	"github.com/MihailSergeenkov/shortener/internal/app/services"
 	"go.uber.org/zap"
 )
 
@@ -34,7 +35,7 @@ func run() error {
 
 	ctx := context.Background()
 
-	s, err := data.NewStorage(ctx, l, config.Params)
+	s, err := data.NewStorage(ctx, l, &config.Params)
 	if err != nil {
 		return fmt.Errorf("storage error: %w", err)
 	}
@@ -48,6 +49,8 @@ func run() error {
 	}()
 
 	r := routes.NewRouter(l, s)
+
+	go services.BackgroundJob(ctx, l, s)
 
 	if err := http.ListenAndServe(config.Params.RunAddr, r); err != nil {
 		if !errors.Is(err, http.ErrServerClosed) {

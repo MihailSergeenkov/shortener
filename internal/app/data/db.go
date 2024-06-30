@@ -2,11 +2,15 @@ package data
 
 import (
 	"context"
-	"database/sql"
+	"embed"
 	"errors"
 	"fmt"
 
+	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/models"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -20,17 +24,21 @@ type DBStorage struct {
 
 const stmt = `
 	WITH new_url AS (
-		INSERT INTO urls (short_url, original_url) 
-		VALUES ($1, $2)
-		ON CONFLICT (original_url) DO NOTHING
+		INSERT INTO urls (short_url, original_url, user_id) 
+		VALUES ($1, $2, $3)
+		ON CONFLICT (original_url) WHERE is_deleted = false DO NOTHING
 		RETURNING short_url
 	)
 	SELECT short_url, true as is_new FROM new_url
 	UNION
-	SELECT short_url, false as is_new FROM urls WHERE original_url = $2
+	SELECT short_url, false as is_new FROM urls WHERE original_url = $2 AND is_deleted = false
 `
 
 func NewDBStorage(ctx context.Context, logger *zap.Logger, dbDSN string) (*DBStorage, error) {
+	if err := runMigrations(dbDSN); err != nil {
+		return nil, fmt.Errorf("failed to run DB migrations: %w", err)
+	}
+
 	pool, err := initPool(ctx, logger, dbDSN)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize a connection pool: %w", err)
@@ -41,15 +49,32 @@ func NewDBStorage(ctx context.Context, logger *zap.Logger, dbDSN string) (*DBSto
 		pool:   pool,
 	}
 
-	if err := s.initDB(ctx); err != nil {
-		return nil, fmt.Errorf("failed to initialize a DB: %w", err)
-	}
-
 	return s, nil
 }
 
+//go:embed migrations/*.sql
+var migrationsDir embed.FS
+
+func runMigrations(dsn string) error {
+	d, err := iofs.New(migrationsDir, "migrations")
+	if err != nil {
+		return fmt.Errorf("failed to return an iofs driver: %w", err)
+	}
+
+	m, err := migrate.NewWithSourceInstance("iofs", d, dsn)
+	if err != nil {
+		return fmt.Errorf("failed to get a new migrate instance: %w", err)
+	}
+	if err := m.Up(); err != nil {
+		if !errors.Is(err, migrate.ErrNoChange) {
+			return fmt.Errorf("failed to apply migrations to the DB: %w", err)
+		}
+	}
+	return nil
+}
+
 func (s *DBStorage) StoreShortURL(ctx context.Context, shortURL string, originalURL string) error {
-	row := s.pool.QueryRow(ctx, stmt, shortURL, originalURL)
+	row := s.pool.QueryRow(ctx, stmt, shortURL, originalURL, ctx.Value(common.KeyUserID))
 
 	var url string
 	var isNewURL bool
@@ -70,7 +95,7 @@ func (s *DBStorage) StoreShortURLs(ctx context.Context, urls []models.URL) error
 	batch := &pgx.Batch{}
 
 	for _, url := range urls {
-		batch.Queue(stmt, url.ShortURL, url.OriginalURL)
+		batch.Queue(stmt, url.ShortURL, url.OriginalURL, url.UserID)
 	}
 
 	result := s.pool.SendBatch(ctx, batch)
@@ -88,8 +113,32 @@ func (s *DBStorage) StoreShortURLs(ctx context.Context, urls []models.URL) error
 	return nil
 }
 
-func (s *DBStorage) GetOriginalURL(ctx context.Context, shortURL string) (string, error) {
-	const queryStmt = `SELECT id, short_url, original_url
+func (s *DBStorage) DeleteShortURLs(ctx context.Context, urls []string) error {
+	const stmt = `UPDATE urls SET is_deleted = true WHERE short_url = $1`
+
+	batch := &pgx.Batch{}
+
+	for _, url := range urls {
+		batch.Queue(stmt, url)
+	}
+
+	result := s.pool.SendBatch(ctx, batch)
+	defer func() {
+		if err := result.Close(); err != nil {
+			s.logger.Error("failed to close batch result", zap.Error(err))
+		}
+	}()
+
+	_, err := result.Exec()
+	if err != nil {
+		return fmt.Errorf("unable to update batch: %w", err)
+	}
+
+	return nil
+}
+
+func (s *DBStorage) GetURL(ctx context.Context, shortURL string) (models.URL, error) {
+	const queryStmt = `SELECT id, short_url, original_url, is_deleted, user_id
 		FROM urls
 		WHERE short_url = $1
 		LIMIT 1`
@@ -97,16 +146,58 @@ func (s *DBStorage) GetOriginalURL(ctx context.Context, shortURL string) (string
 	row := s.pool.QueryRow(ctx, queryStmt, shortURL)
 
 	var u models.URL
-	err := row.Scan(&u.ID, &u.ShortURL, &u.OriginalURL)
+	err := row.Scan(&u.ID, &u.ShortURL, &u.OriginalURL, &u.DeletedFlag, &u.UserID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return "", fmt.Errorf("%w for short URL %s", ErrURLNotFound, shortURL)
+			return models.URL{}, fmt.Errorf("%w for short URL %s", ErrURLNotFound, shortURL)
 		}
 
-		return "", fmt.Errorf("failed to scan a response row: %w", err)
+		return models.URL{}, fmt.Errorf("failed to scan a response row: %w", err)
 	}
 
-	return u.OriginalURL, nil
+	return u, nil
+}
+
+func (s *DBStorage) FetchUserURLs(ctx context.Context) ([]models.URL, error) {
+	const queryStmt = `SELECT id, short_url, original_url, user_id
+		FROM urls
+		WHERE user_id = $1`
+
+	urls := []models.URL{}
+
+	rows, err := s.pool.Query(ctx, queryStmt, ctx.Value(common.KeyUserID))
+	if err != nil {
+		return []models.URL{}, fmt.Errorf("failed to execute query: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var u models.URL
+		err = rows.Scan(&u.ID, &u.ShortURL, &u.OriginalURL, &u.UserID)
+		if err != nil {
+			return []models.URL{}, fmt.Errorf("failed to scan query: %w", err)
+		}
+
+		urls = append(urls, u)
+	}
+
+	rowsErr := rows.Err()
+	if rowsErr != nil {
+		return []models.URL{}, fmt.Errorf("failed to read query: %w", err)
+	}
+
+	return urls, nil
+}
+
+func (s *DBStorage) DropDeletedURLs(ctx context.Context) error {
+	const stmt = `DELETE FROM urls WHERE is_deleted = true`
+
+	_, err := s.pool.Exec(ctx, stmt)
+	if err != nil {
+		return fmt.Errorf("failed to execute drop query: %w", err)
+	}
+
+	return nil
 }
 
 func (s *DBStorage) Ping(ctx context.Context) error {
@@ -119,47 +210,6 @@ func (s *DBStorage) Ping(ctx context.Context) error {
 
 func (s *DBStorage) Close() error {
 	s.pool.Close()
-	return nil
-}
-
-func (s *DBStorage) initDB(ctx context.Context) error {
-	tx, err := s.pool.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to start transaction: %w", err)
-	}
-	defer rollbackTx(ctx, tx, s.logger)
-
-	if err := s.createSchema(ctx, tx); err != nil {
-		return fmt.Errorf("failed to create the DB schema: %w", err)
-	}
-
-	cErr := tx.Commit(ctx)
-	if cErr != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
-	return nil
-}
-
-func (s *DBStorage) createSchema(ctx context.Context, tx pgx.Tx) error {
-	createSchemaStmts := []string{
-		`CREATE TABLE IF NOT EXISTS urls(
-			id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-			short_url VARCHAR(200) NOT NULL,
-			original_url VARCHAR(300) NOT NULL
-		)`,
-		`CREATE UNIQUE INDEX IF NOT EXISTS short_url_index ON urls(short_url)`,
-		`CREATE UNIQUE INDEX IF NOT EXISTS original_url_index ON urls(original_url)`,
-	}
-
-	for _, stmt := range createSchemaStmts {
-		_, err := tx.Exec(ctx, stmt)
-
-		if err != nil {
-			return fmt.Errorf("failed to exec transaction: %w", err)
-		}
-	}
-
 	return nil
 }
 
@@ -180,12 +230,4 @@ func initPool(ctx context.Context, logger *zap.Logger, dbDSN string) (*pgxpool.P
 	}
 
 	return pool, nil
-}
-
-func rollbackTx(ctx context.Context, tx pgx.Tx, logger *zap.Logger) {
-	if rErr := tx.Rollback(ctx); rErr != nil {
-		if !errors.Is(rErr, sql.ErrTxDone) {
-			logger.Error("failed to rollback the transaction", zap.Error(rErr))
-		}
-	}
 }

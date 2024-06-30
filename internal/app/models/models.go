@@ -11,7 +11,9 @@ type Response struct {
 type URL struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
+	UserID      string `json:"user_id"`
 	ID          uint   `json:"id"`
+	DeletedFlag bool   `json:"is_deleted"`
 }
 
 type BatchRequest []BatchDataRequest
@@ -26,4 +28,11 @@ type BatchResponse []BatchDataResponse
 type BatchDataResponse struct {
 	CorrelationID string `json:"correlation_id"`
 	ShortURL      string `json:"short_url"`
+}
+
+type UserURLsResponse []UserURLsDataResponse
+
+type UserURLsDataResponse struct {
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
 }

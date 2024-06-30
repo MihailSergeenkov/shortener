@@ -4,15 +4,20 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"net/url"
+	"time"
 
+	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"github.com/MihailSergeenkov/shortener/internal/app/models"
+	"go.uber.org/zap"
 )
 
 const keyBytes int = 8
+const dropPeriod = 10 // in minutes
 
 func AddShortURL(ctx context.Context, s data.Storager, originalURL string) (string, error) {
 	shortURL, err := generateShortURL()
@@ -33,6 +38,12 @@ func AddBatchShortURL(ctx context.Context, s data.Storager, req models.BatchRequ
 	arrURLs := []models.URL{}
 	resp := models.BatchResponse{}
 
+	userID, ok := ctx.Value(common.KeyUserID).(string)
+
+	if !ok {
+		return models.BatchResponse{}, common.ErrFetchUserIDFromContext
+	}
+
 	for _, reqData := range req {
 		shortURL, err := generateShortURL()
 		if err != nil {
@@ -42,6 +53,7 @@ func AddBatchShortURL(ctx context.Context, s data.Storager, req models.BatchRequ
 		u := models.URL{
 			ShortURL:    shortURL,
 			OriginalURL: reqData.OriginalURL,
+			UserID:      userID,
 		}
 
 		result, err := url.JoinPath(config.Params.BaseURL, shortURL)
@@ -66,6 +78,68 @@ func AddBatchShortURL(ctx context.Context, s data.Storager, req models.BatchRequ
 	return resp, nil
 }
 
+func FetchUserURLs(ctx context.Context, s data.Storager) (models.UserURLsResponse, error) {
+	resp := models.UserURLsResponse{}
+
+	urls, err := s.FetchUserURLs(ctx)
+
+	if err != nil {
+		return models.UserURLsResponse{}, fmt.Errorf("failed to fetch URLs: %w", err)
+	}
+
+	for _, u := range urls {
+		result, err := url.JoinPath(config.Params.BaseURL, u.ShortURL)
+
+		if err != nil {
+			return models.UserURLsResponse{}, fmt.Errorf("failed to construct URL: %w", err)
+		}
+
+		respData := models.UserURLsDataResponse{
+			ShortURL:    result,
+			OriginalURL: u.OriginalURL,
+		}
+
+		resp = append(resp, respData)
+	}
+
+	return resp, nil
+}
+
+func DeleteUserURLs(ctx context.Context, l *zap.Logger, s data.Storager, shortURLs []string) error {
+	urls := make([]string, 0)
+
+	inputCh := generator(ctx, shortURLs)
+	checkResultCh := checkCh(ctx, l, s, inputCh)
+
+	for url := range checkResultCh {
+		urls = append(urls, url)
+	}
+
+	err := s.DeleteShortURLs(ctx, urls)
+	if err != nil {
+		return fmt.Errorf("failed to delete URL: %w", err)
+	}
+
+	return nil
+}
+
+func BackgroundJob(ctx context.Context, l *zap.Logger, s data.Storager) {
+	ticker := time.NewTicker(dropPeriod * time.Minute)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			err := s.DropDeletedURLs(ctx)
+
+			if err != nil {
+				l.Error("failed to drop URLs from storage", zap.Error(err))
+			}
+		}
+	}
+}
+
 func generateShortURL() (string, error) {
 	bytes := make([]byte, keyBytes)
 
@@ -74,4 +148,67 @@ func generateShortURL() (string, error) {
 	}
 
 	return hex.EncodeToString(bytes), nil
+}
+
+func generator(ctx context.Context, shortURLs []string) chan string {
+	inputCh := make(chan string)
+
+	go func() {
+		defer close(inputCh)
+
+		for _, shortURL := range shortURLs {
+			select {
+			case <-ctx.Done():
+				return
+			case inputCh <- shortURL:
+			}
+		}
+	}()
+
+	return inputCh
+}
+
+func checkCh(ctx context.Context, l *zap.Logger, s data.Storager, inputCh chan string) chan string {
+	checkRes := make(chan string)
+
+	go func() {
+		defer close(checkRes)
+
+		for url := range inputCh {
+			u, err := checkURL(ctx, s, url)
+			if err != nil {
+				if errors.Is(err, common.ErrPermDenied) {
+					continue
+				}
+
+				l.Error("failed to check URL", zap.Error(err))
+				continue
+			}
+
+			select {
+			case <-ctx.Done():
+				return
+			case checkRes <- u:
+			}
+		}
+	}()
+	return checkRes
+}
+
+func checkURL(ctx context.Context, s data.Storager, shortURL string) (string, error) {
+	userID, ok := ctx.Value(common.KeyUserID).(string)
+	if !ok {
+		return "", common.ErrFetchUserIDFromContext
+	}
+
+	u, err := s.GetURL(ctx, shortURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to get URL: %w", err)
+	}
+
+	if u.UserID != userID {
+		return "", common.ErrPermDenied
+	}
+
+	return shortURL, nil
 }

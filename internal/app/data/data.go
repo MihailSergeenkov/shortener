@@ -31,12 +31,15 @@ func newOriginalURLAlreadyExistError(url string) error {
 type Storager interface {
 	StoreShortURL(ctx context.Context, shortURL string, originalURL string) error
 	StoreShortURLs(ctx context.Context, urls []models.URL) error
-	GetOriginalURL(ctx context.Context, shortURL string) (string, error)
+	GetURL(ctx context.Context, shortURL string) (models.URL, error)
+	FetchUserURLs(ctx context.Context) ([]models.URL, error)
+	DeleteShortURLs(ctx context.Context, urls []string) error
+	DropDeletedURLs(ctx context.Context) error
 	Ping(ctx context.Context) error
 	Close() error
 }
 
-func NewStorage(ctx context.Context, logger *zap.Logger, params config.Settings) (Storager, error) {
+func NewStorage(ctx context.Context, logger *zap.Logger, params *config.Settings) (Storager, error) {
 	dbDSN := params.DatabaseDSN
 	fsp := params.FileStoragePath
 

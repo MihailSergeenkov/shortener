@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"github.com/MihailSergeenkov/shortener/internal/app/models"
@@ -22,7 +23,7 @@ func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			l.Error("failed to read request body", zap.Error(err))
+			l.Error(common.ReadReqErrStr, zap.Error(err))
 			return
 		}
 
@@ -80,7 +81,7 @@ func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 		dec := json.NewDecoder(r.Body)
 		if err := dec.Decode(&req); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			l.Error("failed to read request body", zap.Error(err))
+			l.Error(common.ReadReqErrStr, zap.Error(err))
 			return
 		}
 
@@ -89,7 +90,7 @@ func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 		if err != nil {
 			var origErr *data.OriginalURLAlreadyExistError
 			if errors.As(err, &origErr) {
-				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set(common.ContentTypeHeader, common.JSONContentType)
 				w.WriteHeader(http.StatusConflict)
 				result, err := url.JoinPath(config.Params.BaseURL, origErr.ShortURL)
 				if err != nil {
@@ -103,7 +104,7 @@ func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 				enc := json.NewEncoder(w)
 				if err := enc.Encode(resp); err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
-					l.Error("error encoding response", zap.Error(err))
+					l.Error(common.EncRespErrStr, zap.Error(err))
 					return
 				}
 				return
@@ -124,13 +125,13 @@ func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 
 		resp := models.Response{Result: result}
 
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set(common.ContentTypeHeader, common.JSONContentType)
 		w.WriteHeader(http.StatusCreated)
 
 		enc := json.NewEncoder(w)
 		if err := enc.Encode(resp); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			l.Error("error encoding response", zap.Error(err))
+			l.Error(common.EncRespErrStr, zap.Error(err))
 			return
 		}
 	}
@@ -143,7 +144,7 @@ func APIAddBatchHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 		dec := json.NewDecoder(r.Body)
 		if err := dec.Decode(&req); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			l.Error("failed to read request body", zap.Error(err))
+			l.Error(common.ReadReqErrStr, zap.Error(err))
 			return
 		}
 
@@ -155,13 +156,13 @@ func APIAddBatchHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set(common.ContentTypeHeader, common.JSONContentType)
 		w.WriteHeader(http.StatusCreated)
 
 		enc := json.NewEncoder(w)
 		if err := enc.Encode(resp); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			l.Error("error encoding response", zap.Error(err))
+			l.Error(common.EncRespErrStr, zap.Error(err))
 			return
 		}
 	}
