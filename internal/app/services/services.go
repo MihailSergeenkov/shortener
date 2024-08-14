@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"time"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
@@ -17,7 +16,6 @@ import (
 )
 
 const keyBytes int = 8
-const dropPeriod = 10 // in minutes
 
 func AddShortURL(ctx context.Context, s data.Storager, originalURL string) (string, error) {
 	shortURL, err := generateShortURL()
@@ -117,27 +115,10 @@ func DeleteUserURLs(ctx context.Context, l *zap.Logger, s data.Storager, shortUR
 
 	err := s.DeleteShortURLs(ctx, urls)
 	if err != nil {
-		return fmt.Errorf("failed to delete URL: %w", err)
+		return fmt.Errorf("failed to delete URLs: %w", err)
 	}
 
 	return nil
-}
-
-func BackgroundJob(ctx context.Context, l *zap.Logger, s data.Storager) {
-	ticker := time.NewTicker(dropPeriod * time.Minute)
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			err := s.DropDeletedURLs(ctx)
-
-			if err != nil {
-				l.Error("failed to drop URLs from storage", zap.Error(err))
-			}
-		}
-	}
 }
 
 func generateShortURL() (string, error) {
