@@ -8,11 +8,12 @@ import (
 	"fmt"
 	"path"
 
+	"go.uber.org/zap"
+
 	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"github.com/MihailSergeenkov/shortener/internal/app/models"
-	"go.uber.org/zap"
 )
 
 const keyBytes int = 8

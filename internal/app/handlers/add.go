@@ -7,12 +7,13 @@ import (
 	"net/http"
 	"path"
 
+	"go.uber.org/zap"
+
 	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"github.com/MihailSergeenkov/shortener/internal/app/models"
 	"github.com/MihailSergeenkov/shortener/internal/app/services"
-	"go.uber.org/zap"
 )
 
 func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {

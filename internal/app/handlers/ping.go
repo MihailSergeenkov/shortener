@@ -3,8 +3,9 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"go.uber.org/zap"
+
+	"github.com/MihailSergeenkov/shortener/internal/app/data"
 )
 
 func PingHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {

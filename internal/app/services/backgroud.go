@@ -4,8 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"go.uber.org/zap"
+
+	"github.com/MihailSergeenkov/shortener/internal/app/data"
 )
 
 const dropPeriod = 10 // in minutes

@@ -1,12 +1,13 @@
 package routes
 
 import (
-	"github.com/MihailSergeenkov/shortener/internal/app/common"
-	"github.com/MihailSergeenkov/shortener/internal/app/data"
-	"github.com/MihailSergeenkov/shortener/internal/app/handlers"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
+
+	"github.com/MihailSergeenkov/shortener/internal/app/common"
+	"github.com/MihailSergeenkov/shortener/internal/app/data"
+	"github.com/MihailSergeenkov/shortener/internal/app/handlers"
 )
 
 func NewRouter(l *zap.Logger, s data.Storager) chi.Router {

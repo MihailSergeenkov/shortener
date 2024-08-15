@@ -5,12 +5,13 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/MihailSergeenkov/shortener/internal/app/common"
-	"github.com/MihailSergeenkov/shortener/internal/app/data/mock"
-	"github.com/MihailSergeenkov/shortener/internal/app/models"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+
+	"github.com/MihailSergeenkov/shortener/internal/app/common"
+	"github.com/MihailSergeenkov/shortener/internal/app/data/mock"
+	"github.com/MihailSergeenkov/shortener/internal/app/models"
 )
 
 func TestAddShortURL_Success(t *testing.T) {

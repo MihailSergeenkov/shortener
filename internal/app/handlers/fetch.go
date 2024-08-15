@@ -6,10 +6,11 @@ import (
 	"net/http"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"github.com/MihailSergeenkov/shortener/internal/app/services"
-	"go.uber.org/zap"
 )
 
 func FetchHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {

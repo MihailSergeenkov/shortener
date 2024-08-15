@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/MihailSergeenkov/shortener/internal/app/common"
-	"github.com/MihailSergeenkov/shortener/internal/app/models"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
@@ -15,12 +13,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
-)
 
-type DBStorage struct {
-	pool   *pgxpool.Pool
-	logger *zap.Logger
-}
+	"github.com/MihailSergeenkov/shortener/internal/app/common"
+	"github.com/MihailSergeenkov/shortener/internal/app/models"
+)
 
 const stmt = `
 	WITH new_url AS (
@@ -33,6 +29,11 @@ const stmt = `
 	UNION
 	SELECT short_url, false as is_new FROM urls WHERE original_url = $2 AND is_deleted = false
 `
+
+type DBStorage struct {
+	pool   *pgxpool.Pool
+	logger *zap.Logger
+}
 
 func NewDBStorage(ctx context.Context, logger *zap.Logger, dbDSN string) (*DBStorage, error) {
 	if err := runMigrations(dbDSN); err != nil {

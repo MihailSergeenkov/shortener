@@ -8,8 +8,9 @@ import (
 	"io/fs"
 	"os"
 
-	"github.com/MihailSergeenkov/shortener/internal/app/models"
 	"go.uber.org/zap"
+
+	"github.com/MihailSergeenkov/shortener/internal/app/models"
 )
 
 const (
