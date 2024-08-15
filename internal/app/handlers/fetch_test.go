@@ -5,9 +5,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/MihailSergeenkov/shortener/internal/app/models"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+
+	"github.com/MihailSergeenkov/shortener/internal/app/models"
 )
 
 func TestFetchHandler(t *testing.T) {

@@ -7,8 +7,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"go.uber.org/zap"
+
+	"github.com/MihailSergeenkov/shortener/internal/app/common"
 )
 
 const maxStatusCode = 300
