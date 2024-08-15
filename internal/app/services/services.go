@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"net/url"
+	"path"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
@@ -37,7 +37,6 @@ func AddBatchShortURL(ctx context.Context, s data.Storager, req models.BatchRequ
 	resp := models.BatchResponse{}
 
 	userID, ok := ctx.Value(common.KeyUserID).(string)
-
 	if !ok {
 		return models.BatchResponse{}, common.ErrFetchUserIDFromContext
 	}
@@ -54,11 +53,7 @@ func AddBatchShortURL(ctx context.Context, s data.Storager, req models.BatchRequ
 			UserID:      userID,
 		}
 
-		result, err := url.JoinPath(config.Params.BaseURL, shortURL)
-
-		if err != nil {
-			return models.BatchResponse{}, fmt.Errorf("failed to construct URL: %w", err)
-		}
+		result := path.Join(config.Params.BaseURL.Path, shortURL)
 
 		respData := models.BatchDataResponse{
 			ShortURL:      result,
@@ -80,17 +75,12 @@ func FetchUserURLs(ctx context.Context, s data.Storager) (models.UserURLsRespons
 	resp := models.UserURLsResponse{}
 
 	urls, err := s.FetchUserURLs(ctx)
-
 	if err != nil {
 		return models.UserURLsResponse{}, fmt.Errorf("failed to fetch URLs: %w", err)
 	}
 
 	for _, u := range urls {
-		result, err := url.JoinPath(config.Params.BaseURL, u.ShortURL)
-
-		if err != nil {
-			return models.UserURLsResponse{}, fmt.Errorf("failed to construct URL: %w", err)
-		}
+		result := path.Join(config.Params.BaseURL.String(), u.ShortURL)
 
 		respData := models.UserURLsDataResponse{
 			ShortURL:    result,

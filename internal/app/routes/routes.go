@@ -11,12 +11,13 @@ import (
 
 func NewRouter(l *zap.Logger, s data.Storager) chi.Router {
 	r := chi.NewRouter()
-	r.Use(withRequestLogging(l), gzipMiddleware(l))
+	r.Use(withRequestLogging(l))
+	r.Mount("/debug", middleware.Profiler())
 
 	r.Get("/ping", handlers.PingHandler(l, s))
 
 	r.Route("/", func(r chi.Router) {
-		r.Use(setAuthMiddleware(l))
+		r.Use(setAuthMiddleware(l), gzipMiddleware(l))
 		r.Post("/", handlers.AddHandler(l, s))
 		r.Get("/{id}", handlers.FetchHandler(l, s))
 

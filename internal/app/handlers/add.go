@@ -5,7 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"net/url"
+	"path"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
@@ -14,8 +14,6 @@ import (
 	"github.com/MihailSergeenkov/shortener/internal/app/services"
 	"go.uber.org/zap"
 )
-
-const constructURLErrStr = "failed to construct URL"
 
 func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -33,13 +31,7 @@ func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 			var origErr *data.OriginalURLAlreadyExistError
 			if errors.As(err, &origErr) {
 				w.WriteHeader(http.StatusConflict)
-				result, err := url.JoinPath(config.Params.BaseURL, origErr.ShortURL)
-
-				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
-					l.Error(constructURLErrStr, zap.Error(err))
-					return
-				}
+				result := path.Join(config.Params.BaseURL.String(), origErr.ShortURL)
 				_, err = w.Write([]byte(result))
 
 				if err != nil {
@@ -55,16 +47,8 @@ func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 			return
 		}
 
-		result, err := url.JoinPath(config.Params.BaseURL, shortURL)
-
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			l.Error(constructURLErrStr, zap.Error(err))
-			return
-		}
-
+		result := path.Join(config.Params.BaseURL.String(), shortURL)
 		w.WriteHeader(http.StatusCreated)
-
 		_, err = w.Write([]byte(result))
 
 		if err != nil {
@@ -92,13 +76,7 @@ func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 			if errors.As(err, &origErr) {
 				w.Header().Set(common.ContentTypeHeader, common.JSONContentType)
 				w.WriteHeader(http.StatusConflict)
-				result, err := url.JoinPath(config.Params.BaseURL, origErr.ShortURL)
-				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
-					l.Error(constructURLErrStr, zap.Error(err))
-					return
-				}
-
+				result := path.Join(config.Params.BaseURL.String(), origErr.ShortURL)
 				resp := models.Response{Result: result}
 
 				enc := json.NewEncoder(w)
@@ -115,14 +93,7 @@ func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 			return
 		}
 
-		result, err := url.JoinPath(config.Params.BaseURL, shortURL)
-
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			l.Error(constructURLErrStr, zap.Error(err))
-			return
-		}
-
+		result := path.Join(config.Params.BaseURL.String(), shortURL)
 		resp := models.Response{Result: result}
 
 		w.Header().Set(common.ContentTypeHeader, common.JSONContentType)

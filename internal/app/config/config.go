@@ -3,25 +3,46 @@ package config
 import (
 	"flag"
 	"fmt"
+	"net/url"
 
 	"github.com/caarlos0/env/v11"
 	"go.uber.org/zap/zapcore"
 )
 
 type Settings struct {
-	RunAddr         string        `env:"SERVER_ADDRESS"`
-	BaseURL         string        `env:"BASE_URL"`
-	FileStoragePath string        `env:"FILE_STORAGE_PATH"`
-	DatabaseDSN     string        `env:"DATABASE_DSN"`
-	SecretKey       string        `env:"SECRET_KEY"`
-	LogLevel        zapcore.Level `env:"LOG_LEVEL"`
+	RunAddr         string        `env:"SERVER_ADDRESS" envDefault:"localhost:8080"`
+	BaseURL         url.URL       `env:"BASE_URL" envDefault:"http://localhost:8080"`
+	FileStoragePath string        `env:"FILE_STORAGE_PATH" envDefault:"/tmp/short-url-db.json"`
+	DatabaseDSN     string        `env:"DATABASE_DSN" envDefault:""`
+	SecretKey       string        `env:"SECRET_KEY" envDefault:"1234567890"`
+	LogLevel        zapcore.Level `env:"LOG_LEVEL" envDefault:"ERROR"`
 }
 
-var Params Settings = Settings{LogLevel: zapcore.ErrorLevel}
+var Params Settings
+
+func init() {
+	Params = Settings{
+		LogLevel: zapcore.ErrorLevel,
+	}
+}
 
 func ParseFlags() error {
-	flag.StringVar(&Params.RunAddr, "a", "localhost:8080", "address and port to run server")
-	flag.StringVar(&Params.BaseURL, "b", "http://localhost:8080", "address and port to urls")
+	err := env.Parse(&Params)
+
+	if err != nil {
+		return fmt.Errorf("env error: %w", err)
+	}
+
+	flag.StringVar(&Params.RunAddr, "a", Params.RunAddr, "address and port to run server")
+	flag.Func("b", `address and port to urls (default "http://localhost:8080")`, func(s string) error {
+		parsedBaseURL, err := url.Parse(s)
+		if err != nil {
+			return fmt.Errorf("parse user base url env error: %w", err)
+		}
+
+		Params.BaseURL = *parsedBaseURL
+		return nil
+	})
 	flag.Func("l", `level for logger (default "ERROR")`, func(s string) error {
 		lev, err := zapcore.ParseLevel(s)
 
@@ -33,17 +54,11 @@ func ParseFlags() error {
 		return nil
 	})
 
-	flag.StringVar(&Params.FileStoragePath, "f", "/tmp/short-url-db.json", "file storage path")
-	flag.StringVar(&Params.DatabaseDSN, "d", "", "database DSN")
-	flag.StringVar(&Params.SecretKey, "s", "1234567890", "secret key for generate cookie token")
+	flag.StringVar(&Params.FileStoragePath, "f", Params.FileStoragePath, "file storage path")
+	flag.StringVar(&Params.DatabaseDSN, "d", Params.DatabaseDSN, "database DSN")
+	flag.StringVar(&Params.SecretKey, "s", Params.SecretKey, "secret key for generate cookie token")
 
 	flag.Parse()
-
-	err := env.Parse(&Params)
-
-	if err != nil {
-		return fmt.Errorf("env error: %w", err)
-	}
 
 	return nil
 }
