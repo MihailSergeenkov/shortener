@@ -53,10 +53,12 @@ func AddBatchShortURL(ctx context.Context, s data.Storager, req models.BatchRequ
 			UserID:      userID,
 		}
 
-		result := path.Join(config.Params.BaseURL.Path, shortURL)
+		baseURL := config.Params.BaseURL
+		newPath := path.Join(baseURL.Path, shortURL)
+		baseURL.Path = newPath
 
 		respData := models.BatchDataResponse{
-			ShortURL:      result,
+			ShortURL:      baseURL.String(),
 			CorrelationID: reqData.CorrelationID,
 		}
 
@@ -80,10 +82,12 @@ func FetchUserURLs(ctx context.Context, s data.Storager) (models.UserURLsRespons
 	}
 
 	for _, u := range urls {
-		result := path.Join(config.Params.BaseURL.String(), u.ShortURL)
+		baseURL := config.Params.BaseURL
+		newPath := path.Join(baseURL.Path, u.ShortURL)
+		baseURL.Path = newPath
 
 		respData := models.UserURLsDataResponse{
-			ShortURL:    result,
+			ShortURL:    baseURL.String(),
 			OriginalURL: u.OriginalURL,
 		}
 

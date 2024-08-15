@@ -61,7 +61,7 @@ func BenchmarkAddShortURL(b *testing.B) {
 
 	b.Run("AddShortURL", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			AddShortURL(ctx, store, originalURL)
+			AddShortURL(ctx, store, originalURL) //nolint:errcheck,gosec // Тест бенчмарка, ошибки проверяются в основном тесте
 		}
 	})
 }
@@ -132,7 +132,7 @@ func BenchmarkAddBatchShortURL(b *testing.B) {
 
 	b.Run("AddBatchShortURL", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			AddBatchShortURL(ctx, store, batch)
+			AddBatchShortURL(ctx, store, batch) //nolint:errcheck,gosec // Тест бенчмарка, ошибки проверяются в основном тесте
 		}
 	})
 }
@@ -200,7 +200,7 @@ func BenchmarkFetchUserURLs(b *testing.B) {
 
 	b.Run("FetchUserURLs", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			FetchUserURLs(ctx, store)
+			FetchUserURLs(ctx, store) //nolint:errcheck,gosec // Тест бенчмарка, ошибки проверяются в основном тесте
 		}
 	})
 }
@@ -271,7 +271,6 @@ func TestDeleteUserURLs_Success(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
-
 }
 
 func TestDeleteUserURLs_Failed(t *testing.T) {
@@ -328,7 +327,7 @@ func BenchmarkDeleteUserURLs(b *testing.B) {
 
 	b.Run("DeleteUserURLs", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			DeleteUserURLs(ctx, logger, store, urls)
+			DeleteUserURLs(ctx, logger, store, urls) //nolint:errcheck,gosec // Тест бенчмарка
 		}
 	})
 }

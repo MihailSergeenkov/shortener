@@ -26,13 +26,16 @@ func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 		}
 
 		shortURL, err := services.AddShortURL(r.Context(), s, string(body))
+		baseURL := config.Params.BaseURL
 
 		if err != nil {
 			var origErr *data.OriginalURLAlreadyExistError
 			if errors.As(err, &origErr) {
 				w.WriteHeader(http.StatusConflict)
-				result := path.Join(config.Params.BaseURL.String(), origErr.ShortURL)
-				_, err = w.Write([]byte(result))
+
+				newPath := path.Join(baseURL.Path, origErr.ShortURL)
+				baseURL.Path = newPath
+				_, err = w.Write([]byte(baseURL.String()))
 
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
@@ -47,9 +50,10 @@ func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 			return
 		}
 
-		result := path.Join(config.Params.BaseURL.String(), shortURL)
+		newPath := path.Join(baseURL.Path, shortURL)
+		baseURL.Path = newPath
 		w.WriteHeader(http.StatusCreated)
-		_, err = w.Write([]byte(result))
+		_, err = w.Write([]byte(baseURL.String()))
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -70,14 +74,17 @@ func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 		}
 
 		shortURL, err := services.AddShortURL(r.Context(), s, req.URL)
+		baseURL := config.Params.BaseURL
 
 		if err != nil {
 			var origErr *data.OriginalURLAlreadyExistError
 			if errors.As(err, &origErr) {
 				w.Header().Set(common.ContentTypeHeader, common.JSONContentType)
 				w.WriteHeader(http.StatusConflict)
-				result := path.Join(config.Params.BaseURL.String(), origErr.ShortURL)
-				resp := models.Response{Result: result}
+
+				newPath := path.Join(baseURL.Path, origErr.ShortURL)
+				baseURL.Path = newPath
+				resp := models.Response{Result: baseURL.String()}
 
 				enc := json.NewEncoder(w)
 				if err := enc.Encode(resp); err != nil {
@@ -93,8 +100,9 @@ func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 			return
 		}
 
-		result := path.Join(config.Params.BaseURL.String(), shortURL)
-		resp := models.Response{Result: result}
+		newPath := path.Join(baseURL.Path, shortURL)
+		baseURL.Path = newPath
+		resp := models.Response{Result: baseURL.String()}
 
 		w.Header().Set(common.ContentTypeHeader, common.JSONContentType)
 		w.WriteHeader(http.StatusCreated)
