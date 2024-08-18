@@ -9,7 +9,7 @@ type ContextValueKey int
 // KeyUserID ключ ID пользователя для контекста.
 const KeyUserID ContextValueKey = iota
 
-// ErrFetchUserIDFromContext ошибка получеения ID пользователя из контекста
+// ErrFetchUserIDFromContext ошибка получеения ID пользователя из контекста.
 var ErrFetchUserIDFromContext = errors.New("failed to fetch user id from context")
 
 // ErrPermDenied ошибка прав доступа к ссылке.

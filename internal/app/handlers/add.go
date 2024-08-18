@@ -119,7 +119,7 @@ func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	}
 }
 
-// APIAddHandler обработчик сохранения нескольких коротких ссылок для API.
+// APIAddBatchHandler обработчик сохранения нескольких коротких ссылок для API.
 func APIAddBatchHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req models.BatchRequest

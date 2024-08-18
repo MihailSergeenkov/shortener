@@ -14,7 +14,7 @@ import (
 type Settings struct {
 	RunAddr         string        `env:"SERVER_ADDRESS" envDefault:"localhost:8080"`            // адрес и порт сервиса
 	BaseURL         url.URL       `env:"BASE_URL" envDefault:"http://localhost:8080"`           // URL для коротких ссылок
-	FileStoragePath string        `env:"FILE_STORAGE_PATH" envDefault:"/tmp/short-url-db.json"` // путь до файла файловой БД
+	FileStoragePath string        `env:"FILE_STORAGE_PATH" envDefault:"/tmp/short-url-db.json"` // путь до файловой БД
 	DatabaseDSN     string        `env:"DATABASE_DSN" envDefault:""`                            // адрес БД
 	SecretKey       string        `env:"SECRET_KEY" envDefault:"1234567890"`                    // секретный ключ
 	LogLevel        zapcore.Level `env:"LOG_LEVEL" envDefault:"ERROR"`                          // уровень логирования
