@@ -1,3 +1,4 @@
+// Модуль бизнес-логики сервиса.
 package services
 
 import (
@@ -18,6 +19,7 @@ import (
 
 const keyBytes int = 8
 
+// AddShortURL функция сохранения короткой ссылки.
 func AddShortURL(ctx context.Context, s data.Storager, originalURL string) (string, error) {
 	shortURL, err := generateShortURL()
 	if err != nil {
@@ -33,6 +35,7 @@ func AddShortURL(ctx context.Context, s data.Storager, originalURL string) (stri
 	return shortURL, nil
 }
 
+// AddBatchShortURL функция сохранения нескольких коротких ссылок.
 func AddBatchShortURL(ctx context.Context, s data.Storager, req models.BatchRequest) (models.BatchResponse, error) {
 	arrURLs := []models.URL{}
 	resp := models.BatchResponse{}
@@ -74,6 +77,7 @@ func AddBatchShortURL(ctx context.Context, s data.Storager, req models.BatchRequ
 	return resp, nil
 }
 
+// FetchUserURLs функция получения всех сохраненных ссылок пользователя.
 func FetchUserURLs(ctx context.Context, s data.Storager) (models.UserURLsResponse, error) {
 	resp := models.UserURLsResponse{}
 
@@ -98,6 +102,7 @@ func FetchUserURLs(ctx context.Context, s data.Storager) (models.UserURLsRespons
 	return resp, nil
 }
 
+// DeleteUserURLs функция мягкого удаления ссылок.
 func DeleteUserURLs(ctx context.Context, l *zap.Logger, s data.Storager, shortURLs []string) error {
 	urls := make([]string, 0)
 

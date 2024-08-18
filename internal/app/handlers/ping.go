@@ -1,3 +1,4 @@
+// Модуль обработчиков http запросов.
 package handlers
 
 import (
@@ -8,6 +9,7 @@ import (
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
 )
 
+// PingHandler обработчик для проверки работоспособности БД.
 func PingHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := s.Ping(r.Context())

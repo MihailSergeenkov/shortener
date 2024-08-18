@@ -16,6 +16,7 @@ import (
 	"github.com/MihailSergeenkov/shortener/internal/app/services"
 )
 
+// AddHandler обработчик сохранения короткой ссылки.
 func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
@@ -64,6 +65,7 @@ func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	}
 }
 
+// APIAddHandler обработчик сохранения короткой ссылки для API.
 func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req models.Request
@@ -117,6 +119,7 @@ func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	}
 }
 
+// APIAddHandler обработчик сохранения нескольких коротких ссылок для API.
 func APIAddBatchHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req models.BatchRequest

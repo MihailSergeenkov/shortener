@@ -1,3 +1,4 @@
+// Модуль логирования для сервиса.
 package logger
 
 import (
@@ -7,6 +8,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// NewLogger функция инициализации логирования.
 func NewLogger(level zapcore.Level) (*zap.Logger, error) {
 	cfg := zap.NewProductionConfig()
 	cfg.Level.SetLevel(level)

@@ -11,6 +11,7 @@ import (
 	"github.com/MihailSergeenkov/shortener/internal/app/services"
 )
 
+// APIDeleteUserURLsHandler обработчик мягкого удалеения ссылок для API.
 func APIDeleteUserURLsHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req []string

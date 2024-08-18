@@ -11,6 +11,7 @@ import (
 
 const dropPeriod = 10 // in minutes
 
+// BackgroundJob функция запуска отложенных задач сервиса (очистка из БД удаленных ссылкок).
 func BackgroundJob(ctx context.Context, l *zap.Logger, s data.Storager) {
 	ticker := time.NewTicker(dropPeriod * time.Minute)
 

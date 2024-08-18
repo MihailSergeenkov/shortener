@@ -13,6 +13,7 @@ import (
 	"github.com/MihailSergeenkov/shortener/internal/app/services"
 )
 
+// FetchHandler обработчик получения оригинальной ссылки по короткой.
 func FetchHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		shortURL := strings.TrimLeft(r.URL.Path, "/")
@@ -39,6 +40,7 @@ func FetchHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	}
 }
 
+// APIFetchUserURLsHandler обработчик получения всех сохраненных ссылок пользователя для API.
 func APIFetchUserURLsHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		resp, err := services.FetchUserURLs(r.Context(), s)

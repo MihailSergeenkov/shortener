@@ -1,3 +1,4 @@
+// Пакет main главный пакет сервиса.
 package main
 
 import (

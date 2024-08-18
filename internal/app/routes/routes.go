@@ -1,3 +1,4 @@
+// Модель роутинга сервиса.
 package routes
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/MihailSergeenkov/shortener/internal/app/handlers"
 )
 
+// NewRouter функция инициализации роутинга.
 func NewRouter(l *zap.Logger, s data.Storager) chi.Router {
 	r := chi.NewRouter()
 	r.Use(withRequestLogging(l))

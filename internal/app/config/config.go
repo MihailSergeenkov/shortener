@@ -1,3 +1,4 @@
+// Пакет config предназначен для конфигурирования сервиса.
 package config
 
 import (
@@ -9,15 +10,17 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// Settings структура для конфигурирования сервиса.
 type Settings struct {
-	RunAddr         string        `env:"SERVER_ADDRESS" envDefault:"localhost:8080"`
-	BaseURL         url.URL       `env:"BASE_URL" envDefault:"http://localhost:8080"`
-	FileStoragePath string        `env:"FILE_STORAGE_PATH" envDefault:"/tmp/short-url-db.json"`
-	DatabaseDSN     string        `env:"DATABASE_DSN" envDefault:""`
-	SecretKey       string        `env:"SECRET_KEY" envDefault:"1234567890"`
-	LogLevel        zapcore.Level `env:"LOG_LEVEL" envDefault:"ERROR"`
+	RunAddr         string        `env:"SERVER_ADDRESS" envDefault:"localhost:8080"`            // адрес и порт сервиса
+	BaseURL         url.URL       `env:"BASE_URL" envDefault:"http://localhost:8080"`           // URL для коротких ссылок
+	FileStoragePath string        `env:"FILE_STORAGE_PATH" envDefault:"/tmp/short-url-db.json"` // путь до файла файловой БД
+	DatabaseDSN     string        `env:"DATABASE_DSN" envDefault:""`                            // адрес БД
+	SecretKey       string        `env:"SECRET_KEY" envDefault:"1234567890"`                    // секретный ключ
+	LogLevel        zapcore.Level `env:"LOG_LEVEL" envDefault:"ERROR"`                          // уровень логирования
 }
 
+// Params глобальная переменная типа Settings, инициализируется в момент старта сервиса.
 var Params Settings
 
 func init() {
@@ -26,6 +29,7 @@ func init() {
 	}
 }
 
+// ParseFlags функция считывания и применения пользовательских настроек сервиса.
 func ParseFlags() error {
 	err := env.Parse(&Params)
 

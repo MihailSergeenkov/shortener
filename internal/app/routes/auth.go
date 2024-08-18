@@ -15,9 +15,9 @@ import (
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
 )
 
-type Claims struct {
+type сlaims struct {
 	jwt.RegisteredClaims
-	UserID string
+	userID string
 }
 
 const keyBytes int = 8
@@ -110,8 +110,8 @@ func buildJWTString() (string, error) {
 		return "", fmt.Errorf("failed to generate user id: %w", err)
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
-		UserID: userID,
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, сlaims{
+		userID: userID,
 	})
 
 	tokenString, err := token.SignedString([]byte(config.Params.SecretKey))
@@ -133,7 +133,7 @@ func generateUserID() (string, error) {
 }
 
 func getUserID(tokenString string) string {
-	claims := &Claims{}
+	claims := &сlaims{}
 
 	_, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -146,5 +146,5 @@ func getUserID(tokenString string) string {
 		return ""
 	}
 
-	return claims.UserID
+	return claims.userID
 }
