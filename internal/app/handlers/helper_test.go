@@ -13,8 +13,6 @@ type MockStorage struct {
 	urls map[string]models.URL
 }
 
-var originalURL = "https://ya.ru/some"
-
 func (s *MockStorage) GetURL(_ context.Context, shortURL string) (models.URL, error) {
 	u, present := s.urls[shortURL]
 

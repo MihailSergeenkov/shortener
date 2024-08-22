@@ -27,9 +27,8 @@ func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 			return
 		}
 
-		shortURL, err := services.AddShortURL(r.Context(), s, string(body))
 		baseURL := config.Params.BaseURL
-
+		shortURL, err := services.AddShortURL(r.Context(), s, string(body))
 		if err != nil {
 			var origErr *data.OriginalURLAlreadyExistError
 			if errors.As(err, &origErr) {

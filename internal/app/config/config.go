@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/caarlos0/env/v11"
 	"go.uber.org/zap/zapcore"
@@ -18,6 +19,7 @@ type Settings struct {
 	DatabaseDSN     string        `env:"DATABASE_DSN" envDefault:""`                            // адрес БД
 	SecretKey       string        `env:"SECRET_KEY" envDefault:"1234567890"`                    // секретный ключ
 	LogLevel        zapcore.Level `env:"LOG_LEVEL" envDefault:"ERROR"`                          // уровень логирования
+	DropURLsPeriod  time.Duration `env:"DROP_URLS_PERIOD" envDefault:"1m"`                      // период полной очистки
 }
 
 // Params глобальная переменная типа Settings, инициализируется в момент старта сервиса.
@@ -29,40 +31,52 @@ func init() {
 	}
 }
 
-// ParseFlags функция считывания и применения пользовательских настроек сервиса.
-func ParseFlags() error {
-	err := env.Parse(&Params)
+// Setup функция считывания и применения пользовательских настроек сервиса.
+func Setup() error {
+	if err := Params.parseEnv(); err != nil {
+		return fmt.Errorf("failed to parse envs: %w", err)
+	}
 
+	Params.parseFlags()
+
+	return nil
+}
+
+func (s *Settings) parseEnv() error {
+	err := env.Parse(&Params)
 	if err != nil {
 		return fmt.Errorf("env error: %w", err)
 	}
 
-	flag.StringVar(&Params.RunAddr, "a", Params.RunAddr, "address and port to run server")
-	flag.Func("b", `address and port to urls (default "http://localhost:8080")`, func(s string) error {
-		parsedBaseURL, err := url.Parse(s)
+	return nil
+}
+
+func (s *Settings) parseFlags() {
+	flag.StringVar(&s.RunAddr, "a", s.RunAddr, "address and port to run server")
+	flag.Func("b", `address and port to urls (default "http://localhost:8080")`, func(v string) error {
+		parsedBaseURL, err := url.Parse(v)
 		if err != nil {
 			return fmt.Errorf("parse user base url env error: %w", err)
 		}
 
-		Params.BaseURL = *parsedBaseURL
+		s.BaseURL = *parsedBaseURL
 		return nil
 	})
-	flag.Func("l", `level for logger (default "ERROR")`, func(s string) error {
-		lev, err := zapcore.ParseLevel(s)
+	flag.Func("l", `level for logger (default "ERROR")`, func(v string) error {
+		lev, err := zapcore.ParseLevel(v)
 
 		if err != nil {
 			return fmt.Errorf("parse log level env error: %w", err)
 		}
 
-		Params.LogLevel = lev
+		s.LogLevel = lev
 		return nil
 	})
 
-	flag.StringVar(&Params.FileStoragePath, "f", Params.FileStoragePath, "file storage path")
-	flag.StringVar(&Params.DatabaseDSN, "d", Params.DatabaseDSN, "database DSN")
-	flag.StringVar(&Params.SecretKey, "s", Params.SecretKey, "secret key for generate cookie token")
+	flag.StringVar(&s.FileStoragePath, "f", s.FileStoragePath, "file storage path")
+	flag.StringVar(&s.DatabaseDSN, "d", s.DatabaseDSN, "database DSN")
+	flag.StringVar(&s.SecretKey, "s", s.SecretKey, "secret key for generate cookie token")
+	flag.DurationVar(&s.DropURLsPeriod, "dp", s.DropURLsPeriod, "drop urls period")
 
 	flag.Parse()
-
-	return nil
 }

@@ -9,11 +9,9 @@ import (
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
 )
 
-const dropPeriod = 10 // in minutes
-
 // BackgroundJob функция запуска отложенных задач сервиса (очистка из БД удаленных ссылкок).
-func BackgroundJob(ctx context.Context, l *zap.Logger, s data.Storager) {
-	ticker := time.NewTicker(dropPeriod * time.Minute)
+func BackgroundJob(ctx context.Context, l *zap.Logger, s data.Storager, dropPeriod time.Duration) {
+	ticker := time.NewTicker(dropPeriod)
 
 	for {
 		select {

@@ -80,6 +80,7 @@ func ExampleAPIDeleteUserURLsHandler() {
 
 func ExampleFetchHandler() {
 	logger := zap.NewNop()
+	originalURL := "https://ya.ru/some"
 	storage := MockStorage{
 		urls: map[string]models.URL{
 			"123": {
