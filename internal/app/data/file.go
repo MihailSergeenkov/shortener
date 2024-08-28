@@ -8,8 +8,9 @@ import (
 	"io/fs"
 	"os"
 
-	"github.com/MihailSergeenkov/shortener/internal/app/models"
 	"go.uber.org/zap"
+
+	"github.com/MihailSergeenkov/shortener/internal/app/models"
 )
 
 const (
@@ -17,12 +18,14 @@ const (
 	openFileErrStr             = "failed to open file storage: %w"
 )
 
+// FileStorage структура файловой БД.
 type FileStorage struct {
 	logger          *zap.Logger
 	baseStorage     BaseStorage
 	fileStoragePath string
 }
 
+// NewFileStorage инициализирует файловую БД.
 func NewFileStorage(logger *zap.Logger, fsp string) (*FileStorage, error) {
 	storage := FileStorage{
 		baseStorage:     *NewBaseStorage(),
@@ -54,6 +57,7 @@ func NewFileStorage(logger *zap.Logger, fsp string) (*FileStorage, error) {
 	return &storage, nil
 }
 
+// StoreShortURL сохраняет короткую ссылку.
 func (s *FileStorage) StoreShortURL(ctx context.Context, shortURL string, originalURL string) error {
 	file, err := os.OpenFile(s.fileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, filePerm)
 	if err != nil {
@@ -78,6 +82,7 @@ func (s *FileStorage) StoreShortURL(ctx context.Context, shortURL string, origin
 	return nil
 }
 
+// StoreShortURLs сохраняет несколько коротких ссылок.
 func (s *FileStorage) StoreShortURLs(ctx context.Context, urls []models.URL) error {
 	file, err := os.OpenFile(s.fileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, filePerm)
 	if err != nil {
@@ -105,14 +110,17 @@ func (s *FileStorage) StoreShortURLs(ctx context.Context, urls []models.URL) err
 	return nil
 }
 
+// FetchUserURLs получает все пользовательские ссылки.
 func (s *FileStorage) FetchUserURLs(ctx context.Context) ([]models.URL, error) {
 	return s.baseStorage.FetchUserURLs(ctx)
 }
 
+// GetURL получает оригинальную ссылку по короткой.
 func (s *FileStorage) GetURL(ctx context.Context, shortURL string) (models.URL, error) {
 	return s.baseStorage.GetURL(ctx, shortURL)
 }
 
+// DeleteShortURLs мягко удаляет ссылки.
 func (s *FileStorage) DeleteShortURLs(ctx context.Context, urls []string) error {
 	file, err := os.OpenFile(s.fileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, filePerm)
 	if err != nil {
@@ -140,14 +148,17 @@ func (s *FileStorage) DeleteShortURLs(ctx context.Context, urls []string) error 
 	return nil
 }
 
+// DropDeletedURLs очищает из БД удаленные ссылки (не используется для файловой БД).
 func (s *FileStorage) DropDeletedURLs(_ context.Context) error {
 	return nil
 }
 
+// Ping проверяет работоспособность БД (не используется для файловой БД).
 func (s *FileStorage) Ping(_ context.Context) error {
 	return nil
 }
 
+// Close закрывает соединение с БД (не используется для файловой БД).
 func (s *FileStorage) Close() error {
 	return nil
 }

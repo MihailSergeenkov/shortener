@@ -1,12 +1,15 @@
+// Модуль обработчиков http запросов.
 package handlers
 
 import (
 	"net/http"
 
-	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"go.uber.org/zap"
+
+	"github.com/MihailSergeenkov/shortener/internal/app/data"
 )
 
+// PingHandler обработчик для проверки работоспособности БД.
 func PingHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := s.Ping(r.Context())

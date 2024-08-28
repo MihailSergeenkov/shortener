@@ -8,13 +8,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/MihailSergeenkov/shortener/internal/app/common"
-	"github.com/MihailSergeenkov/shortener/internal/app/config"
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
+
+	"github.com/MihailSergeenkov/shortener/internal/app/common"
+	"github.com/MihailSergeenkov/shortener/internal/app/config"
 )
 
-type Claims struct {
+type claims struct {
 	jwt.RegisteredClaims
 	UserID string
 }
@@ -109,7 +110,7 @@ func buildJWTString() (string, error) {
 		return "", fmt.Errorf("failed to generate user id: %w", err)
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims{
 		UserID: userID,
 	})
 
@@ -132,7 +133,7 @@ func generateUserID() (string, error) {
 }
 
 func getUserID(tokenString string) string {
-	claims := &Claims{}
+	claims := &claims{}
 
 	_, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {

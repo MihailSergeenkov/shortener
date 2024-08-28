@@ -5,18 +5,18 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"net/url"
+	"path"
+
+	"go.uber.org/zap"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"github.com/MihailSergeenkov/shortener/internal/app/models"
 	"github.com/MihailSergeenkov/shortener/internal/app/services"
-	"go.uber.org/zap"
 )
 
-const constructURLErrStr = "failed to construct URL"
-
+// AddHandler обработчик сохранения короткой ссылки.
 func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
@@ -27,20 +27,16 @@ func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 			return
 		}
 
+		baseURL := config.Params.BaseURL
 		shortURL, err := services.AddShortURL(r.Context(), s, string(body))
-
 		if err != nil {
 			var origErr *data.OriginalURLAlreadyExistError
 			if errors.As(err, &origErr) {
 				w.WriteHeader(http.StatusConflict)
-				result, err := url.JoinPath(config.Params.BaseURL, origErr.ShortURL)
 
-				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
-					l.Error(constructURLErrStr, zap.Error(err))
-					return
-				}
-				_, err = w.Write([]byte(result))
+				newPath := path.Join(baseURL.Path, origErr.ShortURL)
+				baseURL.Path = newPath
+				_, err = w.Write([]byte(baseURL.String()))
 
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
@@ -55,17 +51,10 @@ func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 			return
 		}
 
-		result, err := url.JoinPath(config.Params.BaseURL, shortURL)
-
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			l.Error(constructURLErrStr, zap.Error(err))
-			return
-		}
-
+		newPath := path.Join(baseURL.Path, shortURL)
+		baseURL.Path = newPath
 		w.WriteHeader(http.StatusCreated)
-
-		_, err = w.Write([]byte(result))
+		_, err = w.Write([]byte(baseURL.String()))
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -75,6 +64,7 @@ func AddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	}
 }
 
+// APIAddHandler обработчик сохранения короткой ссылки для API.
 func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req models.Request
@@ -86,20 +76,17 @@ func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 		}
 
 		shortURL, err := services.AddShortURL(r.Context(), s, req.URL)
+		baseURL := config.Params.BaseURL
 
 		if err != nil {
 			var origErr *data.OriginalURLAlreadyExistError
 			if errors.As(err, &origErr) {
 				w.Header().Set(common.ContentTypeHeader, common.JSONContentType)
 				w.WriteHeader(http.StatusConflict)
-				result, err := url.JoinPath(config.Params.BaseURL, origErr.ShortURL)
-				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
-					l.Error(constructURLErrStr, zap.Error(err))
-					return
-				}
 
-				resp := models.Response{Result: result}
+				newPath := path.Join(baseURL.Path, origErr.ShortURL)
+				baseURL.Path = newPath
+				resp := models.Response{Result: baseURL.String()}
 
 				enc := json.NewEncoder(w)
 				if err := enc.Encode(resp); err != nil {
@@ -115,15 +102,9 @@ func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 			return
 		}
 
-		result, err := url.JoinPath(config.Params.BaseURL, shortURL)
-
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			l.Error(constructURLErrStr, zap.Error(err))
-			return
-		}
-
-		resp := models.Response{Result: result}
+		newPath := path.Join(baseURL.Path, shortURL)
+		baseURL.Path = newPath
+		resp := models.Response{Result: baseURL.String()}
 
 		w.Header().Set(common.ContentTypeHeader, common.JSONContentType)
 		w.WriteHeader(http.StatusCreated)
@@ -137,6 +118,7 @@ func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	}
 }
 
+// APIAddBatchHandler обработчик сохранения нескольких коротких ссылок для API.
 func APIAddBatchHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req models.BatchRequest

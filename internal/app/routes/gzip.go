@@ -7,8 +7,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"go.uber.org/zap"
+
+	"github.com/MihailSergeenkov/shortener/internal/app/common"
 )
 
 const maxStatusCode = 300
@@ -25,10 +26,12 @@ func newCompressWriter(w http.ResponseWriter) *compressWriter {
 	}
 }
 
+// Write переопределенние оригинального метода.
 func (c *compressWriter) Write(p []byte) (int, error) {
 	return c.zw.Write(p) //nolint:wrapcheck // Нужно обернуть, но возврат должен остаться оригинальным
 }
 
+// WriteHeader переопределенние оригинального метода.
 func (c *compressWriter) WriteHeader(statusCode int) {
 	if statusCode < maxStatusCode {
 		c.ResponseWriter.Header().Set("Content-Encoding", "gzip")
@@ -36,6 +39,7 @@ func (c *compressWriter) WriteHeader(statusCode int) {
 	c.ResponseWriter.WriteHeader(statusCode)
 }
 
+// Close переопределенние оригинального метода.
 func (c *compressWriter) Close() error {
 	return c.zw.Close() //nolint:wrapcheck // Нужно обернуть, но возврат должен остаться оригинальным
 }
@@ -59,10 +63,12 @@ func newCompressReader(r io.ReadCloser, l *zap.Logger) (*compressReader, error) 
 	}, nil
 }
 
+// Read переопределенние оригинального метода.
 func (c compressReader) Read(p []byte) (n int, err error) {
 	return c.zr.Read(p) //nolint:wrapcheck // Нужно обернуть, но возврат должен остаться оригинальным
 }
 
+// Close переопределенние оригинального метода.
 func (c *compressReader) Close() error {
 	if err := c.r.Close(); err != nil {
 		c.logger.Error("failed to close base reader", zap.Error(err))

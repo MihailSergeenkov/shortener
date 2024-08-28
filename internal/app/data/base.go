@@ -10,16 +10,19 @@ import (
 
 const initSize int = 100
 
+// BaseStorage структура in-memory БД.
 type BaseStorage struct {
 	urls map[string]models.URL
 }
 
+// NewBaseStorage инициализирует in-memory БД.
 func NewBaseStorage() *BaseStorage {
 	return &BaseStorage{
 		urls: make(map[string]models.URL, initSize),
 	}
 }
 
+// StoreShortURL сохраняет короткую ссылку.
 func (s *BaseStorage) StoreShortURL(ctx context.Context, shortURL string, originalURL string) error {
 	if _, ok := s.urls[shortURL]; ok {
 		return ErrShortURLAlreadyExist
@@ -44,6 +47,7 @@ func (s *BaseStorage) StoreShortURL(ctx context.Context, shortURL string, origin
 	return nil
 }
 
+// StoreShortURLs сохраняет несколько коротких ссылок.
 func (s *BaseStorage) StoreShortURLs(_ context.Context, urls []models.URL) error {
 	for _, url := range urls {
 		if _, ok := s.urls[url.ShortURL]; ok {
@@ -61,6 +65,7 @@ func (s *BaseStorage) StoreShortURLs(_ context.Context, urls []models.URL) error
 	return nil
 }
 
+// GetURL получает оригинальную ссылку по короткой.
 func (s *BaseStorage) GetURL(_ context.Context, shortURL string) (models.URL, error) {
 	u, ok := s.urls[shortURL]
 
@@ -71,6 +76,7 @@ func (s *BaseStorage) GetURL(_ context.Context, shortURL string) (models.URL, er
 	return u, nil
 }
 
+// FetchUserURLs получает все пользовательские ссылки.
 func (s *BaseStorage) FetchUserURLs(ctx context.Context) ([]models.URL, error) {
 	urls := []models.URL{}
 	userID := ctx.Value(common.KeyUserID)
@@ -84,6 +90,7 @@ func (s *BaseStorage) FetchUserURLs(ctx context.Context) ([]models.URL, error) {
 	return urls, nil
 }
 
+// DeleteShortURLs мягко удаляет ссылки.
 func (s *BaseStorage) DeleteShortURLs(ctx context.Context, urls []string) error {
 	for _, url := range urls {
 		u, ok := s.urls[url]
@@ -98,14 +105,17 @@ func (s *BaseStorage) DeleteShortURLs(ctx context.Context, urls []string) error 
 	return nil
 }
 
+// DropDeletedURLs очищает из БД удаленные ссылки (не используется для in-memory БД).
 func (s *BaseStorage) DropDeletedURLs(_ context.Context) error {
 	return nil
 }
 
+// Ping проверяет работоспособность БД (не используется для in-memory БД).
 func (s *BaseStorage) Ping(_ context.Context) error {
 	return nil
 }
 
+// Close закрывает соединение с БД (не используется для in-memory БД).
 func (s *BaseStorage) Close() error {
 	return nil
 }

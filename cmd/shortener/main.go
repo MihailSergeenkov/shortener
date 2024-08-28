@@ -1,3 +1,4 @@
+// Пакет main главный пакет сервиса.
 package main
 
 import (
@@ -7,12 +8,13 @@ import (
 	"log"
 	"net/http"
 
+	"go.uber.org/zap"
+
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"github.com/MihailSergeenkov/shortener/internal/app/logger"
 	"github.com/MihailSergeenkov/shortener/internal/app/routes"
 	"github.com/MihailSergeenkov/shortener/internal/app/services"
-	"go.uber.org/zap"
 )
 
 func main() {
@@ -22,7 +24,7 @@ func main() {
 }
 
 func run() error {
-	if err := config.ParseFlags(); err != nil {
+	if err := config.Setup(); err != nil {
 		return fmt.Errorf("config error: %w", err)
 	}
 
@@ -50,7 +52,7 @@ func run() error {
 
 	r := routes.NewRouter(l, s)
 
-	go services.BackgroundJob(ctx, l, s)
+	go services.BackgroundJob(ctx, l, s, config.Params.DropURLsPeriod)
 
 	if err := http.ListenAndServe(config.Params.RunAddr, r); err != nil {
 		if !errors.Is(err, http.ErrServerClosed) {

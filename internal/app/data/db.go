@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/MihailSergeenkov/shortener/internal/app/common"
-	"github.com/MihailSergeenkov/shortener/internal/app/models"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
@@ -15,12 +13,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
-)
 
-type DBStorage struct {
-	pool   *pgxpool.Pool
-	logger *zap.Logger
-}
+	"github.com/MihailSergeenkov/shortener/internal/app/common"
+	"github.com/MihailSergeenkov/shortener/internal/app/models"
+)
 
 const stmt = `
 	WITH new_url AS (
@@ -34,6 +30,13 @@ const stmt = `
 	SELECT short_url, false as is_new FROM urls WHERE original_url = $2 AND is_deleted = false
 `
 
+// DBStorage структура postgresql БД.
+type DBStorage struct {
+	pool   *pgxpool.Pool
+	logger *zap.Logger
+}
+
+// NewDBStorage инициализирует postgresql БД.
 func NewDBStorage(ctx context.Context, logger *zap.Logger, dbDSN string) (*DBStorage, error) {
 	if err := runMigrations(dbDSN); err != nil {
 		return nil, fmt.Errorf("failed to run DB migrations: %w", err)
@@ -73,6 +76,7 @@ func runMigrations(dsn string) error {
 	return nil
 }
 
+// StoreShortURL сохраняет короткую ссылку.
 func (s *DBStorage) StoreShortURL(ctx context.Context, shortURL string, originalURL string) error {
 	row := s.pool.QueryRow(ctx, stmt, shortURL, originalURL, ctx.Value(common.KeyUserID))
 
@@ -91,6 +95,7 @@ func (s *DBStorage) StoreShortURL(ctx context.Context, shortURL string, original
 	return nil
 }
 
+// StoreShortURLs сохраняет несколько коротких ссылок.
 func (s *DBStorage) StoreShortURLs(ctx context.Context, urls []models.URL) error {
 	batch := &pgx.Batch{}
 
@@ -113,6 +118,7 @@ func (s *DBStorage) StoreShortURLs(ctx context.Context, urls []models.URL) error
 	return nil
 }
 
+// DeleteShortURLs мягко удаляет ссылки.
 func (s *DBStorage) DeleteShortURLs(ctx context.Context, urls []string) error {
 	const stmt = `UPDATE urls SET is_deleted = true WHERE short_url = $1`
 
@@ -137,6 +143,7 @@ func (s *DBStorage) DeleteShortURLs(ctx context.Context, urls []string) error {
 	return nil
 }
 
+// GetURL получает оригинальную ссылку по короткой.
 func (s *DBStorage) GetURL(ctx context.Context, shortURL string) (models.URL, error) {
 	const queryStmt = `SELECT id, short_url, original_url, is_deleted, user_id
 		FROM urls
@@ -158,6 +165,7 @@ func (s *DBStorage) GetURL(ctx context.Context, shortURL string) (models.URL, er
 	return u, nil
 }
 
+// FetchUserURLs получает все пользовательские ссылки.
 func (s *DBStorage) FetchUserURLs(ctx context.Context) ([]models.URL, error) {
 	const queryStmt = `SELECT id, short_url, original_url, user_id
 		FROM urls
@@ -189,6 +197,7 @@ func (s *DBStorage) FetchUserURLs(ctx context.Context) ([]models.URL, error) {
 	return urls, nil
 }
 
+// DropDeletedURLs очищает из БД удаленные ссылки.
 func (s *DBStorage) DropDeletedURLs(ctx context.Context) error {
 	const stmt = `DELETE FROM urls WHERE is_deleted = true`
 
@@ -200,6 +209,7 @@ func (s *DBStorage) DropDeletedURLs(ctx context.Context) error {
 	return nil
 }
 
+// Ping проверяет работоспособность БД.
 func (s *DBStorage) Ping(ctx context.Context) error {
 	if err := s.pool.Ping(ctx); err != nil {
 		return fmt.Errorf("failed to ping DB: %w", err)
@@ -208,6 +218,7 @@ func (s *DBStorage) Ping(ctx context.Context) error {
 	return nil
 }
 
+// Close закрывает соединение с БД.
 func (s *DBStorage) Close() error {
 	s.pool.Close()
 	return nil
