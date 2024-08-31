@@ -10,6 +10,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
@@ -30,9 +31,19 @@ const stmt = `
 	SELECT short_url, false as is_new FROM urls WHERE original_url = $2 AND is_deleted = false
 `
 
+// DBPooler интерфейс к пулу БД.
+type DBPooler interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	Ping(ctx context.Context) error
+	Close()
+}
+
 // DBStorage структура postgresql БД.
 type DBStorage struct {
-	pool   *pgxpool.Pool
+	pool   DBPooler
 	logger *zap.Logger
 }
 
