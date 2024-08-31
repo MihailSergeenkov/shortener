@@ -96,7 +96,7 @@ func TestDBStoreShortURLs(t *testing.T) {
 			resultErr: errors.New("some error"),
 		},
 	}
-	for _, test := range tests {
+	for _, test := range tests { //nolint:dupl // Если устранить дублирование, код будет очень запутанным
 		t.Run(test.name, func(t *testing.T) {
 			pool.EXPECT().SendBatch(ctx, gomock.Any()).Times(1).Return(batchResults)
 
@@ -145,7 +145,7 @@ func TestDBDeleteShortURLs(t *testing.T) {
 			resultErr: errors.New("some error"),
 		},
 	}
-	for _, test := range tests {
+	for _, test := range tests { //nolint:dupl // Если устранить дублирование, код будет очень запутанным
 		t.Run(test.name, func(t *testing.T) {
 			pool.EXPECT().SendBatch(ctx, gomock.Any()).Times(1).Return(batchResults)
 

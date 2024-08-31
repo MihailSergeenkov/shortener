@@ -23,18 +23,17 @@ func TestStoreShortURL(t *testing.T) {
 	shortURL := "short_url"
 	originalURL := "some_url"
 	currentUserID := "some_id"
+	ctx := context.WithValue(context.Background(), common.KeyUserID, currentUserID)
 
 	tests := []struct {
 		name    string
 		storage *BaseStorage
-		ctx     context.Context
 		wantErr bool
 		errText string
 	}{
 		{
 			name:    "success store",
 			storage: NewBaseStorage(),
-			ctx:     context.WithValue(context.Background(), common.KeyUserID, currentUserID),
 			wantErr: false,
 			errText: "",
 		},
@@ -51,17 +50,10 @@ func TestStoreShortURL(t *testing.T) {
 			wantErr: true,
 			errText: "short url already exist",
 		},
-		{
-			name:    "context without user id",
-			storage: NewBaseStorage(),
-			ctx:     context.Background(),
-			wantErr: true,
-			errText: "failed to fetch user id from context",
-		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := test.storage.StoreShortURL(test.ctx, shortURL, originalURL)
+			err := test.storage.StoreShortURL(ctx, shortURL, originalURL)
 
 			if test.wantErr {
 				require.Error(t, err)
@@ -71,6 +63,21 @@ func TestStoreShortURL(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestStoreShortURL_FailedContext(t *testing.T) {
+	shortURL := "short_url"
+	originalURL := "some_url"
+
+	ctx := context.Background()
+	storage := NewBaseStorage()
+
+	t.Run("context without user id", func(t *testing.T) {
+		err := storage.StoreShortURL(ctx, shortURL, originalURL)
+
+		require.Error(t, err)
+		require.ErrorContains(t, err, "failed to fetch user id from context")
+	})
 }
 
 func TestStoreShortURLs(t *testing.T) {
