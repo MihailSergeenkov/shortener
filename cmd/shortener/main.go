@@ -17,6 +17,12 @@ import (
 	"github.com/MihailSergeenkov/shortener/internal/app/services"
 )
 
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 func main() {
 	if err := run(); err != nil {
 		log.Fatal(err)
@@ -24,6 +30,10 @@ func main() {
 }
 
 func run() error {
+	log.Printf("Build version: %s", buildVersion)
+	log.Printf("Build date: %s", buildDate)
+	log.Printf("Build commit: %s", buildCommit)
+
 	if err := config.Setup(); err != nil {
 		return fmt.Errorf("config error: %w", err)
 	}
