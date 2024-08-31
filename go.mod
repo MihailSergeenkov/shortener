@@ -1,6 +1,6 @@
 module github.com/MihailSergeenkov/shortener
 
-go 1.22.2
+go 1.22.3
 
 require (
 	github.com/caarlos0/env/v11 v11.0.0
@@ -25,8 +25,10 @@ require (
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
-	golang.org/x/crypto v0.20.0 // indirect
-	golang.org/x/sync v0.5.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/crypto v0.23.0 // indirect
+	golang.org/x/net v0.25.0 // indirect
+	golang.org/x/sync v0.7.0 // indirect
+	golang.org/x/text v0.15.0 // indirect
+	golang.org/x/tools v0.21.1-0.20240531212143-b6235391adb3 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
