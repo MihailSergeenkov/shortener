@@ -39,3 +39,10 @@ go test -v -coverpkg=./... -coverprofile=profile.cov ./...
 sed -i -e '/mock/d' profile.cov 
 go tool cover -func profile.cov 
 ```
+
+## Cборка проекта
+```
+cd cmd/shortener
+BUILD_VERSION=v1.0.1 // указать актуальную версию
+go build -ldflags "-X 'main.buildCommit=$(git rev-parse --short=8 HEAD)' -X 'main.buildVersion=$(echo $BUILD_VERSION)' -X 'main.buildDate=$(date +'%Y/%m/%d %H:%M:%S')'" .
+```

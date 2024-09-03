@@ -60,28 +60,44 @@ func main() {
 
 // run функция, которая отвечает за анализ исходного кода.
 func run(pass *analysis.Pass) (interface{}, error) {
-	for _, file := range pass.Files {
-		if file.Name.Name != "main" {
-			continue
-		}
+	if pass.Pkg.Name() != "main" {
+		return nil, nil
+	}
 
+	for _, file := range pass.Files {
 		if osImportAbsent(file, file.Imports) {
 			continue
 		}
 
-		ast.Inspect(file, func(node ast.Node) bool {
-			if call, ok := node.(*ast.CallExpr); ok {
-				if selector, ok := call.Fun.(*ast.SelectorExpr); ok {
-					if p, ok := selector.X.(*ast.Ident); ok {
-						if p.Name == "os" && selector.Sel.Name == "Exit" {
-							pass.Reportf(p.NamePos, "call os.Exit function")
-						}
-					}
-				}
+		for _, decl := range file.Decls {
+			fn, ok := decl.(*ast.FuncDecl)
+			if !ok || fn.Name.Name != "main" {
+				continue
 			}
 
-			return true
-		})
+			ast.Inspect(fn.Body, func(node ast.Node) bool {
+				call, ok := node.(*ast.CallExpr)
+				if !ok {
+					return true
+				}
+
+				selector, ok := call.Fun.(*ast.SelectorExpr)
+				if !ok {
+					return true
+				}
+
+				ident, ok := selector.X.(*ast.Ident)
+				if !ok {
+					return true
+				}
+
+				if ident.Name == "os" && selector.Sel.Name == "Exit" {
+					pass.Reportf(ident.NamePos, "call os.Exit function")
+				}
+
+				return true
+			})
+		}
 	}
 	return nil, nil
 }
