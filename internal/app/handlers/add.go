@@ -89,9 +89,9 @@ func APIAddHandler(l *zap.Logger, s data.Storager) http.HandlerFunc {
 				resp := models.Response{Result: baseURL.String()}
 
 				enc := json.NewEncoder(w)
-				if err := enc.Encode(resp); err != nil {
+				if errEnc := enc.Encode(resp); errEnc != nil {
 					w.WriteHeader(http.StatusInternalServerError)
-					l.Error(common.EncRespErrStr, zap.Error(err))
+					l.Error(common.EncRespErrStr, zap.Error(errEnc))
 					return
 				}
 				return

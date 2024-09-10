@@ -45,3 +45,13 @@ func TestNewStorage(t *testing.T) {
 		})
 	}
 }
+
+func TestNewOriginalURLAlreadyExistError(t *testing.T) {
+	url := "some_url"
+	err := newOriginalURLAlreadyExistError(url)
+
+	t.Run("create error", func(t *testing.T) {
+		require.Error(t, err)
+		assert.IsType(t, (*OriginalURLAlreadyExistError)(nil), err)
+	})
+}
