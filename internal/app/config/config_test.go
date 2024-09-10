@@ -9,8 +9,8 @@ import (
 
 func TestParseEnv(t *testing.T) {
 	tests := []struct {
-		name    string
 		setEnv  func()
+		name    string
 		wantErr bool
 	}{
 		{
