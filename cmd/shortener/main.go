@@ -92,7 +92,7 @@ func defaultServer(r chi.Router) error {
 func trustedServer(l *zap.Logger, r chi.Router) error {
 	certManager := autocert.Manager{
 		Prompt: autocert.AcceptTOS,
-		Cache:  autocert.DirCache("certs"),
+		Cache:  autocert.DirCache("/tmp/certs"),
 	}
 	server := &http.Server{
 		Addr:    ":443",
