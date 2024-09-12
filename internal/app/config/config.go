@@ -97,7 +97,7 @@ func parseConfigData(data []byte) error {
 
 	vc := reflect.ValueOf(config)
 	tc := vc.Type()
-	for i := 0; i < tc.NumField(); i++ {
+	for i := range tc.NumField() {
 		field := tc.Field(i)
 		envName := field.Tag.Get("env")
 
@@ -105,7 +105,9 @@ func parseConfigData(data []byte) error {
 			continue
 		}
 
-		os.Setenv(envName, vc.Field(i).String())
+		if err := os.Setenv(envName, vc.Field(i).String()); err != nil {
+			return fmt.Errorf("failed to set env from config: %w", err)
+		}
 	}
 
 	return nil
