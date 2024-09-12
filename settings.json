@@ -1,0 +1,10 @@
+{
+  "server_address": "localhost:8081",
+  "base_url": "http://localhost:8081",
+  "file_storage_path": "/tmp/url-db.json",
+  "database_dsn": "",
+  "enable_https": "false",
+  "secret_key": "12345",
+  "drop_urls_period": "1m",
+  "log_level": "ERROR"
+}
