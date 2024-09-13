@@ -16,6 +16,7 @@ func BackgroundJob(ctx context.Context, l *zap.Logger, s data.Storager, dropPeri
 	for {
 		select {
 		case <-ctx.Done():
+			l.Info("backgroud job stopped", zap.Error(ctx.Err()))
 			return
 		case <-ticker.C:
 			err := s.DropDeletedURLs(ctx)
