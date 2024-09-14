@@ -35,6 +35,12 @@ var (
 	buildCommit  = "N/A"
 )
 
+// WebServer интерфейс к веб серверу.
+type WebServer interface {
+	ListenAndServeTLS(certFile string, keyFile string) error
+	ListenAndServe() error
+}
+
 func main() {
 	if err := run(); err != nil {
 		log.Fatal(err)
@@ -90,7 +96,7 @@ func run() error {
 
 	go services.BackgroundJob(ctx, l, s, config.Params.DropURLsPeriod)
 
-	srv := configureServer(r)
+	srv := configureServer(r, config.Params.EnableHTTPS, config.Params.RunAddr)
 
 	g.Go(func() error {
 		defer func() {
@@ -100,7 +106,7 @@ func run() error {
 				l.Error("failed", zap.Error(err))
 			}
 		}()
-		if err := runServer(srv); err != nil {
+		if err := runServer(srv, config.Params.EnableHTTPS); err != nil {
 			if !errors.Is(err, http.ErrServerClosed) {
 				return fmt.Errorf("HTTP server has encoutenred an error: %w", err)
 			}
@@ -127,15 +133,15 @@ func run() error {
 	return nil
 }
 
-func configureServer(r chi.Router) *http.Server {
-	if config.Params.EnableHTTPS {
+func configureServer(r chi.Router, enableHTTPS bool, runAddr string) *http.Server {
+	if enableHTTPS {
 		certManager := autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
 			Cache:      autocert.DirCache("/tmp/certs"),
 			HostPolicy: autocert.HostWhitelist("mynetwork.keenetic.link"),
 		}
 		server := &http.Server{
-			Addr:    config.Params.RunAddr,
+			Addr:    runAddr,
 			Handler: r,
 			TLSConfig: &tls.Config{
 				GetCertificate: certManager.GetCertificate,
@@ -147,21 +153,21 @@ func configureServer(r chi.Router) *http.Server {
 	}
 
 	return &http.Server{
-		Addr:    config.Params.RunAddr,
+		Addr:    runAddr,
 		Handler: r,
 	}
 }
 
-func runServer(srv *http.Server) error {
+func runServer(srv WebServer, enableHTTPS bool) error {
 	var err error
 
-	if config.Params.EnableHTTPS {
+	if enableHTTPS {
 		err = srv.ListenAndServeTLS("", "")
 	} else {
 		err = srv.ListenAndServe()
 	}
 	if err != nil {
-		return fmt.Errorf("listen and server has failed:: %w", err)
+		return fmt.Errorf("listen and server has failed: %w", err)
 	}
 
 	return nil

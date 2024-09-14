@@ -131,7 +131,7 @@ func (s *FileStorage) DeleteShortURLs(ctx context.Context, urls []string) error 
 
 	baseStoreErr := s.baseStorage.DeleteShortURLs(ctx, urls)
 	if baseStoreErr != nil {
-		return fmt.Errorf("failed to add urls: %w", baseStoreErr)
+		return fmt.Errorf("failed to delete urls: %w", baseStoreErr)
 	}
 
 	encoder := json.NewEncoder(file)
