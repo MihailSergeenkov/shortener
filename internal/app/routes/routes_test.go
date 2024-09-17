@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/data/mock"
@@ -21,4 +22,13 @@ func TestNewRouter(t *testing.T) {
 		r := NewRouter(logger, storage)
 		assert.Implements(t, (*chi.Router)(nil), r)
 	})
+}
+
+func closeBody(t *testing.T, r *http.Response) {
+	t.Helper()
+	err := r.Body.Close()
+
+	if err != nil {
+		t.Log(err)
+	}
 }

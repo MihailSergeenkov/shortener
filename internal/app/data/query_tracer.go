@@ -5,10 +5,16 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
+// Logger интерфейс к логгеру.
+type Logger interface {
+	Info(msg string, fields ...zapcore.Field)
+}
+
 type queryTracer struct {
-	logger *zap.Logger
+	logger Logger
 }
 
 // TraceQueryStart метод начала трасировки запроса.

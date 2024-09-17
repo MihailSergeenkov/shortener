@@ -4,6 +4,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 
@@ -105,6 +106,7 @@ func gzipMiddleware(l *zap.Logger) func(next http.Handler) http.Handler {
 
 				cr, err := newCompressReader(r.Body, l)
 				if err != nil {
+					log.Print(err)
 					w.WriteHeader(http.StatusInternalServerError)
 					l.Error("failed to create compress reader", zap.Error(err))
 					return
