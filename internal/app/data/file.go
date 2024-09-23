@@ -153,6 +153,17 @@ func (s *FileStorage) DropDeletedURLs(_ context.Context) error {
 	return nil
 }
 
+// FetchStats получает статистические данные.
+func (s *FileStorage) FetchStats(ctx context.Context) (int, int, error) {
+	users := map[string]struct{}{}
+
+	for _, u := range s.baseStorage.urls {
+		users[u.UserID] = struct{}{}
+	}
+
+	return len(s.baseStorage.urls), len(users), nil
+}
+
 // Ping проверяет работоспособность БД (не используется для файловой БД).
 func (s *FileStorage) Ping(_ context.Context) error {
 	return nil

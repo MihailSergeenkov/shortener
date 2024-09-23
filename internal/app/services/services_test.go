@@ -332,3 +332,42 @@ func BenchmarkDeleteUserURLs(b *testing.B) {
 		}
 	})
 }
+
+func TestFetchStats_Success(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	ctx := context.Background()
+	store := mock.NewMockStorager(mockCtrl)
+	urls := 1
+	users := 1
+	resp := models.StatsResponse{
+		URLs:  urls,
+		Users: users,
+	}
+
+	store.EXPECT().FetchStats(ctx).Times(1).Return(urls, users, nil)
+
+	t.Run("fetch stats success", func(t *testing.T) {
+		result, err := FetchStats(ctx, store)
+		assert.NoError(t, err)
+		assert.Equal(t, resp, result)
+	})
+}
+
+func TestFetchStats_Failed(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	ctx := context.Background()
+	store := mock.NewMockStorager(mockCtrl)
+	errSome := errors.New("some error")
+
+	store.EXPECT().FetchStats(ctx).Times(1).Return(0, 0, errSome)
+
+	t.Run("fetch stats failed", func(t *testing.T) {
+		_, err := FetchStats(ctx, store)
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "failed to fetch stats", "some error")
+	})
+}

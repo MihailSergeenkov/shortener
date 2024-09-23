@@ -8,9 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
-
 	models "github.com/MihailSergeenkov/shortener/internal/app/models"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockStorager is a mock of Storager interface.
@@ -76,6 +75,22 @@ func (m *MockStorager) DropDeletedURLs(ctx context.Context) error {
 func (mr *MockStoragerMockRecorder) DropDeletedURLs(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DropDeletedURLs", reflect.TypeOf((*MockStorager)(nil).DropDeletedURLs), ctx)
+}
+
+// FetchStats mocks base method.
+func (m *MockStorager) FetchStats(ctx context.Context) (int, int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchStats", ctx)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(int)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// FetchStats indicates an expected call of FetchStats.
+func (mr *MockStoragerMockRecorder) FetchStats(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchStats", reflect.TypeOf((*MockStorager)(nil).FetchStats), ctx)
 }
 
 // FetchUserURLs mocks base method.

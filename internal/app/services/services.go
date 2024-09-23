@@ -121,6 +121,21 @@ func DeleteUserURLs(ctx context.Context, l *zap.Logger, s data.Storager, shortUR
 	return nil
 }
 
+// FetchStats функция получения статистических данных.
+func FetchStats(ctx context.Context, s data.Storager) (models.StatsResponse, error) {
+	urls, users, err := s.FetchStats(ctx)
+	if err != nil {
+		return models.StatsResponse{}, fmt.Errorf("failed to fetch stats: %w", err)
+	}
+
+	stats := models.StatsResponse{
+		URLs:  urls,
+		Users: users,
+	}
+
+	return stats, nil
+}
+
 func generateShortURL() (string, error) {
 	bytes := make([]byte, keyBytes)
 

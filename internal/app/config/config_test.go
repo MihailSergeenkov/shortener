@@ -60,8 +60,8 @@ func TestGetConfigData(t *testing.T) {
 func TestParseConfigData(t *testing.T) {
 	tests := []struct {
 		name       string
-		wantErr    bool
 		configFile string
+		wantErr    bool
 	}{
 		{
 			name:       "success parsed config",
@@ -110,6 +110,7 @@ func TestParseEnv(t *testing.T) {
 			setEnv: func() {
 				require.NoError(t, os.Setenv("SERVER_ADDRESS", "localhost:8081"))
 				require.NoError(t, os.Setenv("BASE_URL", "http://localhost:8081"))
+				require.NoError(t, os.Setenv("TRUSTED_SUBNET", "192.168.0.0/24"))
 			},
 			wantErr: false,
 		},
@@ -118,6 +119,13 @@ func TestParseEnv(t *testing.T) {
 			setEnv: func() {
 				require.NoError(t, os.Setenv("SERVER_ADDRESS", "localhost:8081"))
 				require.NoError(t, os.Setenv("LOG_LEVEL", "some string"))
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid trusted subnet env",
+			setEnv: func() {
+				require.NoError(t, os.Setenv("TRUSTED_SUBNET", "some string"))
 			},
 			wantErr: true,
 		},

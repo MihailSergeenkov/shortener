@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"net"
 	"net/url"
 	"os"
 	"reflect"
@@ -21,6 +22,7 @@ type Settings struct {
 	FileStoragePath string        `json:"file_storage_path" env:"FILE_STORAGE_PATH" envDefault:"/tmp/url-db.json"`
 	DatabaseDSN     string        `json:"database_dsn" env:"DATABASE_DSN" envDefault:""`
 	SecretKey       string        `json:"secret_key" env:"SECRET_KEY" envDefault:"1234567890"`
+	TrustedSubnet   *net.IPNet    `json:"trusted_subnet" env:"TRUSTED_SUBNET" envDefault:""`
 	DropURLsPeriod  time.Duration `json:"drop_urls_period" env:"DROP_URLS_PERIOD" envDefault:"1m"`
 	LogLevel        zapcore.Level `json:"log_level" env:"LOG_LEVEL" envDefault:"ERROR"`
 	EnableHTTPS     bool          `json:"enable_https" env:"ENABLE_HTTPS" envDefault:"false"`
@@ -88,6 +90,7 @@ func parseConfigData(data []byte) error {
 		DropURLsPeriod  string `json:"drop_urls_period" env:"DROP_URLS_PERIOD"`
 		LogLevel        string `json:"log_level" env:"LOG_LEVEL"`
 		EnableHTTPS     string `json:"enable_https" env:"ENABLE_HTTPS"`
+		TrustedSubnet   string `json:"trusted_subnet" env:"TRUSTED_SUBNET"`
 	}{}
 
 	err := json.Unmarshal(data, &config)
@@ -114,7 +117,20 @@ func parseConfigData(data []byte) error {
 }
 
 func (s *Settings) parseEnv() error {
-	err := env.Parse(s)
+	err := env.ParseWithOptions(s, env.Options{
+		FuncMap: map[reflect.Type]env.ParserFunc{
+			reflect.TypeOf(net.IPNet{}): func(v string) (interface{}, error) {
+				if v == "" {
+					return nil, nil
+				}
+				_, net, err := net.ParseCIDR(v)
+				if err != nil {
+					return nil, fmt.Errorf("parse trusted subnet env error: %w", err)
+				}
+				return *net, nil
+			},
+		},
+	})
 	if err != nil {
 		return fmt.Errorf("env error: %w", err)
 	}
@@ -141,6 +157,19 @@ func (s *Settings) parseFlags() {
 		}
 
 		s.LogLevel = lev
+		return nil
+	})
+	flag.Func("t", `trusted subnet for service data (default "")`, func(v string) error {
+		if v == "" {
+			return nil
+		}
+
+		_, net, err := net.ParseCIDR(v)
+		if err != nil {
+			return fmt.Errorf("parse trusted subnet error: %w", err)
+		}
+
+		s.TrustedSubnet = net
 		return nil
 	})
 

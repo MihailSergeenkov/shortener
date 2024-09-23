@@ -41,6 +41,7 @@ type Storager interface {
 	FetchUserURLs(ctx context.Context) ([]models.URL, error)                      // получить все ссылки пользователя
 	DeleteShortURLs(ctx context.Context, urls []string) error                     // мягко удалить ссылки
 	DropDeletedURLs(ctx context.Context) error                                    // очистить из БД удаленные ссылки
+	FetchStats(ctx context.Context) (int, int, error)                             // получение статистических данных
 	Ping(ctx context.Context) error                                               // проверка работоспособности БД
 	Close() error                                                                 // закрыть соединение с БД
 }

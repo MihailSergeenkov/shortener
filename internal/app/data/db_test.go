@@ -357,6 +357,58 @@ func TestDBDropDeletedURLs(t *testing.T) {
 	}
 }
 
+func TestDBFetchStats(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	pool := mock.NewMockDBPooler(mockCtrl)
+	logger := zap.NewNop()
+	storage := DBStorage{
+		pool:   pool,
+		logger: logger,
+	}
+	ctx := context.Background()
+	stmt := `SELECT count(*), count(DISTINCT user_id) FROM urls`
+
+	row := mock.NewMockRow(mockCtrl)
+
+	tests := []struct {
+		name    string
+		wantErr bool
+		errText string
+		rowErr  error
+	}{
+		{
+			name:    "success fetch",
+			wantErr: false,
+			errText: "",
+			rowErr:  nil,
+		},
+		{
+			name:    "failed read row",
+			wantErr: true,
+			errText: "failed to scan a response row",
+			rowErr:  errors.New("some error"),
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			pool.EXPECT().QueryRow(ctx, stmt).Times(1).Return(row)
+
+			row.EXPECT().Scan(gomock.Any()).Times(1).Return(test.rowErr)
+
+			_, _, err := storage.FetchStats(ctx)
+
+			if test.wantErr {
+				require.Error(t, err)
+				require.ErrorContains(t, err, test.errText)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestDBPing(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
