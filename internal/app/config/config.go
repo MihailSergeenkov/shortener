@@ -17,12 +17,12 @@ import (
 
 // Settings структура для конфигурирования сервиса.
 type Settings struct {
+	TrustedSubnet   *net.IPNet    `json:"trusted_subnet" env:"TRUSTED_SUBNET" envDefault:""`
 	BaseURL         url.URL       `json:"base_url" env:"BASE_URL" envDefault:"http://localhost:8080"`
 	RunAddr         string        `json:"server_address" env:"SERVER_ADDRESS" envDefault:"localhost:8080"`
 	FileStoragePath string        `json:"file_storage_path" env:"FILE_STORAGE_PATH" envDefault:"/tmp/url-db.json"`
 	DatabaseDSN     string        `json:"database_dsn" env:"DATABASE_DSN" envDefault:""`
 	SecretKey       string        `json:"secret_key" env:"SECRET_KEY" envDefault:"1234567890"`
-	TrustedSubnet   *net.IPNet    `json:"trusted_subnet" env:"TRUSTED_SUBNET" envDefault:""`
 	DropURLsPeriod  time.Duration `json:"drop_urls_period" env:"DROP_URLS_PERIOD" envDefault:"1m"`
 	LogLevel        zapcore.Level `json:"log_level" env:"LOG_LEVEL" envDefault:"ERROR"`
 	EnableHTTPS     bool          `json:"enable_https" env:"ENABLE_HTTPS" envDefault:"false"`
@@ -121,7 +121,7 @@ func (s *Settings) parseEnv() error {
 		FuncMap: map[reflect.Type]env.ParserFunc{
 			reflect.TypeOf(net.IPNet{}): func(v string) (interface{}, error) {
 				if v == "" {
-					return nil, nil
+					return nil, nil //nolint:nilnil // Контроллируемое поведение
 				}
 				_, net, err := net.ParseCIDR(v)
 				if err != nil {
@@ -164,12 +164,12 @@ func (s *Settings) parseFlags() {
 			return nil
 		}
 
-		_, net, err := net.ParseCIDR(v)
+		_, subnet, err := net.ParseCIDR(v)
 		if err != nil {
 			return fmt.Errorf("parse trusted subnet error: %w", err)
 		}
 
-		s.TrustedSubnet = net
+		s.TrustedSubnet = subnet
 		return nil
 	})
 
