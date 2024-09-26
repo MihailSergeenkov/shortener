@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package shortener;
+
+option go_package = "github.com/MihailSergeenkov/shortener/internal/app/proto";
+
+import "google/protobuf/empty.proto";
+
+message URL {
+  string short_url = 1;
+  string original_url = 2;
+}
+
+message BatchRequest {
+  string correlation_id = 1;
+  string original_url = 2;
+}
+
+message BatchResponse {
+  string correlation_id = 1;
+  string short_url = 2;
+}
+
+message AddShortURLRequest {
+  string original_url = 1;
+}
+
+message AddShortURLResponse {
+  string short_url = 1;
+}
+
+message AddShortURLsRequest {
+  repeated BatchRequest urls = 1;
+}
+
+message AddShortURLsResponse {
+  repeated BatchResponse urls = 1;
+}
+
+message GetURLRequest {
+  string short_url = 1;
+}
+
+message GetURLResponse {
+  string original_url = 1;
+}
+
+message FetchUserURLsResponse {
+  repeated URL urls = 1;
+}
+
+message DeleteUserURLsRequest {
+  repeated string urls = 1;
+}
+
+message DeleteUserURLsResponse {
+  string text = 1;
+}
+
+message FetchStatsResponse {
+  int32 urls = 1;
+  int32 users = 2;
+}
+
+message PingResponse {
+  string text = 1;
+}
+
+service Shortener {
+  rpc AddShortURL(AddShortURLRequest) returns (AddShortURLResponse);
+  rpc AddShortURLs(AddShortURLsRequest) returns (AddShortURLsResponse);
+  rpc GetURL(GetURLRequest) returns (GetURLResponse);
+  rpc FetchUserURLs(google.protobuf.Empty) returns (FetchUserURLsResponse);
+  rpc DeleteUserURLs(DeleteUserURLsRequest) returns (DeleteUserURLsResponse);
+  rpc FetchStats(google.protobuf.Empty) returns (FetchStatsResponse);
+  rpc Ping(google.protobuf.Empty) returns (PingResponse);
+}

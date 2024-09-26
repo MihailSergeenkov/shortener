@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os/signal"
 	"syscall"
@@ -19,6 +20,7 @@ import (
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"github.com/MihailSergeenkov/shortener/internal/app/logger"
+	"github.com/MihailSergeenkov/shortener/internal/app/proto"
 	"github.com/MihailSergeenkov/shortener/internal/app/routes"
 	"github.com/MihailSergeenkov/shortener/internal/app/services"
 	"github.com/go-chi/chi/v5"
@@ -62,6 +64,7 @@ func run() error {
 	}
 
 	l.Info("Running server on", zap.String("addr", config.Params.RunAddr))
+	l.Info("Running grpc server on", zap.String("addr", config.Params.RunGAddr))
 
 	ctx, cancelCtx := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 	defer cancelCtx()
@@ -97,6 +100,7 @@ func run() error {
 	go services.BackgroundJob(ctx, l, s, config.Params.DropURLsPeriod)
 
 	srv := configureServer(r, config.Params.EnableHTTPS, config.Params.RunAddr)
+	gSrv := proto.NewGRPCServer(l, s)
 
 	g.Go(func() error {
 		defer func() {
@@ -115,6 +119,18 @@ func run() error {
 	})
 
 	g.Go(func() error {
+		listen, err := net.Listen("tcp", config.Params.RunGAddr)
+		if err != nil {
+			return fmt.Errorf("listen grpc has failed: %w", err)
+		}
+		if err := gSrv.Serve(listen); err != nil {
+			return fmt.Errorf("start grpc has failed: %w", err)
+		}
+
+		return nil
+	})
+
+	g.Go(func() error {
 		defer log.Print("server has been shutdown")
 		<-ctx.Done()
 
@@ -123,6 +139,8 @@ func run() error {
 		if err := srv.Shutdown(shutdownTimeoutCtx); err != nil {
 			log.Printf("an error occurred during server shutdown: %v", err)
 		}
+		gSrv.GracefulStop()
+
 		return nil
 	})
 

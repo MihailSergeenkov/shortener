@@ -20,6 +20,7 @@ type Settings struct {
 	TrustedSubnet   *net.IPNet    `json:"trusted_subnet" env:"TRUSTED_SUBNET" envDefault:""`
 	BaseURL         url.URL       `json:"base_url" env:"BASE_URL" envDefault:"http://localhost:8080"`
 	RunAddr         string        `json:"server_address" env:"SERVER_ADDRESS" envDefault:"localhost:8080"`
+	RunGAddr        string        `json:"gserver_address" env:"GSERVER_ADDRESS" envDefault:"localhost:3200"`
 	FileStoragePath string        `json:"file_storage_path" env:"FILE_STORAGE_PATH" envDefault:"/tmp/url-db.json"`
 	DatabaseDSN     string        `json:"database_dsn" env:"DATABASE_DSN" envDefault:""`
 	SecretKey       string        `json:"secret_key" env:"SECRET_KEY" envDefault:"1234567890"`
@@ -84,6 +85,7 @@ func parseConfigData(data []byte) error {
 	config := struct {
 		BaseURL         string `json:"base_url" env:"BASE_URL"`
 		RunAddr         string `json:"server_address" env:"SERVER_ADDRESS"`
+		RunGAddr        string `json:"c" env:"GSERVER_ADDRESS"`
 		FileStoragePath string `json:"file_storage_path" env:"FILE_STORAGE_PATH"`
 		DatabaseDSN     string `json:"database_dsn" env:"DATABASE_DSN"`
 		SecretKey       string `json:"secret_key" env:"SECRET_KEY"`
@@ -140,6 +142,7 @@ func (s *Settings) parseEnv() error {
 
 func (s *Settings) parseFlags() {
 	flag.StringVar(&s.RunAddr, "a", s.RunAddr, "address and port to run server")
+	flag.StringVar(&s.RunGAddr, "g", s.RunGAddr, "address and port to run grpc server")
 	flag.Func("b", `address and port to urls (default "http://localhost:8080")`, func(v string) error {
 		parsedBaseURL, err := url.Parse(v)
 		if err != nil {

@@ -37,6 +37,7 @@ git fetch template && git checkout template/main .github
 ```
 go test -v -coverpkg=./... -coverprofile=profile.cov ./...
 sed -i -e '/mock/d' profile.cov 
+sed -i -e '/pb\.go/d' profile.cov
 go tool cover -func profile.cov 
 ```
 
@@ -45,4 +46,18 @@ go tool cover -func profile.cov
 cd cmd/shortener
 BUILD_VERSION=v1.0.1 // указать актуальную версию
 go build -ldflags "-X 'main.buildCommit=$(git rev-parse --short=8 HEAD)' -X 'main.buildVersion=$(echo $BUILD_VERSION)' -X 'main.buildDate=$(date +'%Y/%m/%d %H:%M:%S')'" .
+```
+
+## Тестирование gRPC сервера
+Небходимо установить утилиту grpcurl, на Mac OS нужно выполнить команду
+```
+brew install grpcurl
+```
+Далее запускаем сервер, по-умолчанию gRPC сервер работает на 3200 порту.
+Пример команд
+```
+grpcurl -plaintext localhost:3200 shortener.Shortener.Ping
+grpcurl -plaintext localhost:3200 shortener.Shortener.FetchStats
+grpcurl -plaintext -d '{"short_url": "qwerty"}' localhost:3200 shortener.Shortener.GetURL
+grpcurl -plaintext -H 'user_id:123' localhost:3200 shortener.Shortener.FetchUserURLs 
 ```

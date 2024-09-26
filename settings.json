@@ -1,5 +1,6 @@
 {
   "server_address": "localhost:8081",
+  "gserver_address": "localhost:3201",
   "base_url": "http://localhost:8081",
   "file_storage_path": "/tmp/url-db.json",
   "database_dsn": "",
