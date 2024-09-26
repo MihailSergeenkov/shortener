@@ -29,6 +29,7 @@ type ProtoServer struct {
 	storage data.Storager
 }
 
+//nolint:all // Функция взята из локументации к библиотеке
 func loggerInterceptor(l *zap.Logger) logging.Logger {
 	return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any) {
 		f := make([]zap.Field, 0, len(fields)/2)
@@ -90,7 +91,7 @@ func authInterceptor(
 	}
 
 	if len(userID) == 0 {
-		return nil, status.Error(codes.Unauthenticated, "missing user id")
+		return nil, status.Error(codes.Unauthenticated, "missing user id") //nolint:wrapcheck // FalsePositive
 	}
 
 	newContext := context.WithValue(ctx, common.KeyUserID, userID)
@@ -120,7 +121,7 @@ func (s *ProtoServer) AddShortURL(ctx context.Context, in *AddShortURLRequest) (
 	var response AddShortURLResponse
 
 	baseURL := config.Params.BaseURL
-	shortURL, err := services.AddShortURL(ctx, s.storage, in.OriginalUrl)
+	shortURL, err := services.AddShortURL(ctx, s.storage, in.GetOriginalUrl())
 	if err != nil {
 		var origErr *data.OriginalURLAlreadyExistError
 		if errors.As(err, &origErr) {
@@ -131,7 +132,7 @@ func (s *ProtoServer) AddShortURL(ctx context.Context, in *AddShortURLRequest) (
 			return &response, nil
 		}
 		s.logger.Error("failed to add URL to storage", zap.Error(err))
-		return nil, status.Error(codes.Aborted, "failed to add URL to storage")
+		return nil, status.Error(codes.Aborted, "failed to add URL to storage") //nolint:wrapcheck // FalsePositive
 	}
 
 	newPath := path.Join(baseURL.Path, shortURL)
@@ -145,12 +146,13 @@ func (s *ProtoServer) AddShortURL(ctx context.Context, in *AddShortURLRequest) (
 func (s *ProtoServer) AddShortURLs(ctx context.Context, in *AddShortURLsRequest) (*AddShortURLsResponse, error) {
 	var req models.BatchRequest
 	var response AddShortURLsResponse
-	var respURLs []*BatchResponse
 
-	for _, u := range in.Urls {
+	respURLs := make([]*BatchResponse, 0, len(in.GetUrls()))
+
+	for _, u := range in.GetUrls() {
 		r := models.BatchDataRequest{
-			CorrelationID: u.CorrelationId,
-			OriginalURL:   u.OriginalUrl,
+			CorrelationID: u.GetCorrelationId(),
+			OriginalURL:   u.GetOriginalUrl(),
 		}
 		req = append(req, r)
 	}
@@ -158,7 +160,7 @@ func (s *ProtoServer) AddShortURLs(ctx context.Context, in *AddShortURLsRequest)
 	resp, err := services.AddBatchShortURL(ctx, s.storage, req)
 	if err != nil {
 		s.logger.Error("failed to add URLs to storage", zap.Error(err))
-		return nil, status.Error(codes.Aborted, "failed to add URLs to storage")
+		return nil, status.Error(codes.Aborted, "failed to add URLs to storage") //nolint:wrapcheck // FalsePositive
 	}
 
 	for _, r := range resp {
@@ -176,18 +178,18 @@ func (s *ProtoServer) AddShortURLs(ctx context.Context, in *AddShortURLsRequest)
 
 // GetURL реализует интерфейс получения оригинальной ссылки по короткой.
 func (s *ProtoServer) GetURL(ctx context.Context, in *GetURLRequest) (*GetURLResponse, error) {
-	u, err := s.storage.GetURL(ctx, in.ShortUrl)
+	u, err := s.storage.GetURL(ctx, in.GetShortUrl())
 	if err != nil {
 		if errors.Is(err, data.ErrURLNotFound) {
-			return nil, status.Error(codes.NotFound, "URL not found")
+			return nil, status.Error(codes.NotFound, "URL not found") //nolint:wrapcheck // FalsePositive
 		}
 
 		s.logger.Error("failed to fetch URL from storage", zap.Error(err))
-		return nil, status.Error(codes.Aborted, "failed to fetch URL from storage")
+		return nil, status.Error(codes.Aborted, "failed to fetch URL from storage") //nolint:wrapcheck // FalsePositive
 	}
 
 	if u.DeletedFlag {
-		return nil, status.Error(codes.Unavailable, "URL deleted")
+		return nil, status.Error(codes.Unavailable, "URL deleted") //nolint:wrapcheck // FalsePositive
 	}
 
 	var response GetURLResponse
@@ -201,15 +203,15 @@ func (s *ProtoServer) FetchUserURLs(ctx context.Context, _ *emptypb.Empty) (*Fet
 	resp, err := services.FetchUserURLs(ctx, s.storage)
 	if err != nil {
 		s.logger.Error("failed to fetch URLs from storage", zap.Error(err))
-		return nil, status.Error(codes.Aborted, "failed to fetch URLs from storage")
+		return nil, status.Error(codes.Aborted, "failed to fetch URLs from storage") //nolint:wrapcheck // FalsePositive
 	}
 
 	if len(resp) == 0 {
-		return nil, status.Error(codes.NotFound, "URLs not found")
+		return nil, status.Error(codes.NotFound, "URLs not found") //nolint:wrapcheck // FalsePositive
 	}
 
 	var response FetchUserURLsResponse
-	var respURLs []*URL
+	respURLs := make([]*URL, 0, len(resp))
 
 	for _, r := range resp {
 		u := URL{
@@ -226,10 +228,10 @@ func (s *ProtoServer) FetchUserURLs(ctx context.Context, _ *emptypb.Empty) (*Fet
 
 // DeleteUserURLs реализует интерфейс мягкого удаления ссылок.
 func (s *ProtoServer) DeleteUserURLs(ctx context.Context, in *DeleteUserURLsRequest) (*DeleteUserURLsResponse, error) {
-	err := services.DeleteUserURLs(ctx, s.logger, s.storage, in.Urls)
+	err := services.DeleteUserURLs(ctx, s.logger, s.storage, in.GetUrls())
 	if err != nil {
 		s.logger.Error("failed to delete URLs from storage", zap.Error(err))
-		return nil, status.Error(codes.Aborted, "failed to delete URLs from storage")
+		return nil, status.Error(codes.Aborted, "failed to delete URLs from storage") //nolint:wrapcheck // FalsePositive
 	}
 
 	var response DeleteUserURLsResponse
@@ -243,7 +245,7 @@ func (s *ProtoServer) FetchStats(ctx context.Context, _ *emptypb.Empty) (*FetchS
 	resp, err := services.FetchStats(ctx, s.storage)
 	if err != nil {
 		s.logger.Error("failed to fetch stats from storage", zap.Error(err))
-		return nil, status.Error(codes.Aborted, "failed to fetch stats from storage")
+		return nil, status.Error(codes.Aborted, "failed to fetch stats from storage") //nolint:wrapcheck // FalsePositive
 	}
 
 	var response FetchStatsResponse
@@ -258,7 +260,7 @@ func (s *ProtoServer) Ping(ctx context.Context, _ *emptypb.Empty) (*PingResponse
 	err := s.storage.Ping(ctx)
 	if err != nil {
 		s.logger.Error("failed to connect to DB", zap.Error(err))
-		return nil, status.Error(codes.Aborted, "failed to connect to DB")
+		return nil, status.Error(codes.Aborted, "failed to connect to DB") //nolint:wrapcheck // FalsePositive
 	}
 
 	var response PingResponse
