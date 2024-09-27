@@ -39,10 +39,10 @@ func init() {
 }
 
 // Setup функция считывания и применения пользовательских настроек сервиса.
-func Setup() error {
+func Setup(withFlags bool) error {
 	configData, presentData, err := getConfigData()
 	if err != nil {
-		return fmt.Errorf("failed to parse config: %w", err)
+		return fmt.Errorf("failed to get config: %w", err)
 	}
 	if presentData {
 		if err := parseConfigData(configData); err != nil {
@@ -54,7 +54,9 @@ func Setup() error {
 		return fmt.Errorf("failed to parse envs: %w", err)
 	}
 
-	Params.parseFlags()
+	if withFlags {
+		Params.parseFlags()
+	}
 
 	return nil
 }

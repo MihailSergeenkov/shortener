@@ -8,6 +8,66 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestSetup(t *testing.T) {
+	tests := []struct {
+		name    string
+		setEnv  func()
+		wantErr bool
+		errText string
+	}{
+		{
+			name: "successs setup",
+			setEnv: func() {
+				require.NoError(t, os.Setenv("SERVER_ADDRESS", "localhost:8081"))
+				require.NoError(t, os.Setenv("BASE_URL", "http://localhost:8081"))
+				require.NoError(t, os.Setenv("TRUSTED_SUBNET", "192.168.0.0/24"))
+			},
+			wantErr: false,
+			errText: "",
+		},
+		{
+			name: "failed to get config",
+			setEnv: func() {
+				require.NoError(t, os.Setenv("CONFIG", "set.json"))
+			},
+			wantErr: true,
+			errText: "failed to get config",
+		},
+		{
+			name: "failed to parse config",
+			setEnv: func() {
+				require.NoError(t, os.Setenv("CONFIG", "testdata/bad_settings.json"))
+			},
+			wantErr: true,
+			errText: "failed to parse config data",
+		},
+		{
+			name: "failed to parse envs",
+			setEnv: func() {
+				require.NoError(t, os.Setenv("SERVER_ADDRESS", "localhost:8081"))
+				require.NoError(t, os.Setenv("LOG_LEVEL", "some string"))
+			},
+			wantErr: true,
+			errText: "failed to parse envs",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			os.Clearenv()
+			test.setEnv()
+
+			err := Setup(false)
+
+			if test.wantErr {
+				require.Error(t, err)
+				require.ErrorContains(t, err, test.errText)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestGetConfigData(t *testing.T) {
 	tests := []struct {
 		setEnv      func()
@@ -42,6 +102,7 @@ func TestGetConfigData(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			os.Clearenv()
 			test.setEnv()
 
 			_, presentData, err := getConfigData()
@@ -122,16 +183,10 @@ func TestParseEnv(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		{
-			name: "invalid trusted subnet env",
-			setEnv: func() {
-				require.NoError(t, os.Setenv("TRUSTED_SUBNET", "some string"))
-			},
-			wantErr: true,
-		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			os.Clearenv()
 			test.setEnv()
 
 			err := Params.parseEnv()

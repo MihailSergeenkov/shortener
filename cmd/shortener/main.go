@@ -44,17 +44,18 @@ type WebServer interface {
 }
 
 func main() {
-	if err := run(); err != nil {
+	ctx := context.Background()
+	if err := run(ctx, true); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run() error {
+func run(baseCtx context.Context, withFlags bool) error {
 	log.Printf("Build version: %s", buildVersion)
 	log.Printf("Build date: %s", buildDate)
 	log.Printf("Build commit: %s", buildCommit)
 
-	if err := config.Setup(); err != nil {
+	if err := config.Setup(withFlags); err != nil {
 		return fmt.Errorf("config error: %w", err)
 	}
 
@@ -66,7 +67,7 @@ func run() error {
 	l.Info("Running server on", zap.String("addr", config.Params.RunAddr))
 	l.Info("Running grpc server on", zap.String("addr", config.Params.RunGAddr))
 
-	ctx, cancelCtx := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	ctx, cancelCtx := signal.NotifyContext(baseCtx, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 	defer cancelCtx()
 
 	g, ctx := errgroup.WithContext(ctx)
