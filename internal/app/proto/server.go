@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"strings"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/common"
 	"github.com/MihailSergeenkov/shortener/internal/app/config"
@@ -18,7 +19,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/reflection"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // ProtoServer поддерживает все необходимые методы сервера.
@@ -78,7 +78,9 @@ func authInterceptor(
 		"FetchUserURLs":  true,
 		"DeleteUserURLs": true,
 	}
-	if _, ok := methods[info.FullMethod]; !ok {
+
+	method := strings.TrimPrefix(info.FullMethod, "/shortener.Shortener/")
+	if _, ok := methods[method]; !ok {
 		return handler(ctx, req)
 	}
 
@@ -199,7 +201,7 @@ func (s *ProtoServer) GetURL(ctx context.Context, in *GetURLRequest) (*GetURLRes
 }
 
 // FetchUserURLs реализует интерфейс получения всех сохраненных ссылок пользователя.
-func (s *ProtoServer) FetchUserURLs(ctx context.Context, _ *emptypb.Empty) (*FetchUserURLsResponse, error) {
+func (s *ProtoServer) FetchUserURLs(ctx context.Context, _ *FetchUserURLsRequest) (*FetchUserURLsResponse, error) {
 	resp, err := services.FetchUserURLs(ctx, s.storage)
 	if err != nil {
 		s.logger.Error("failed to fetch URLs from storage", zap.Error(err))
@@ -241,7 +243,7 @@ func (s *ProtoServer) DeleteUserURLs(ctx context.Context, in *DeleteUserURLsRequ
 }
 
 // FetchStats реализует интерфейс получения статистических данных.
-func (s *ProtoServer) FetchStats(ctx context.Context, _ *emptypb.Empty) (*FetchStatsResponse, error) {
+func (s *ProtoServer) FetchStats(ctx context.Context, _ *FetchStatsRequest) (*FetchStatsResponse, error) {
 	resp, err := services.FetchStats(ctx, s.storage)
 	if err != nil {
 		s.logger.Error("failed to fetch stats from storage", zap.Error(err))
@@ -256,7 +258,7 @@ func (s *ProtoServer) FetchStats(ctx context.Context, _ *emptypb.Empty) (*FetchS
 }
 
 // Ping реализует интерфейс проверки работоспособности БД.
-func (s *ProtoServer) Ping(ctx context.Context, _ *emptypb.Empty) (*PingResponse, error) {
+func (s *ProtoServer) Ping(ctx context.Context, _ *PingRequest) (*PingResponse, error) {
 	err := s.storage.Ping(ctx)
 	if err != nil {
 		s.logger.Error("failed to connect to DB", zap.Error(err))

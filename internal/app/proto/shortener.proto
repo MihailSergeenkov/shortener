@@ -4,8 +4,6 @@ package shortener;
 
 option go_package = "github.com/MihailSergeenkov/shortener/internal/app/proto";
 
-import "google/protobuf/empty.proto";
-
 message URL {
   string short_url = 1;
   string original_url = 2;
@@ -45,6 +43,8 @@ message GetURLResponse {
   string original_url = 1;
 }
 
+message FetchUserURLsRequest {}
+
 message FetchUserURLsResponse {
   repeated URL urls = 1;
 }
@@ -57,10 +57,14 @@ message DeleteUserURLsResponse {
   string text = 1;
 }
 
+message FetchStatsRequest {}
+
 message FetchStatsResponse {
   int32 urls = 1;
   int32 users = 2;
 }
+
+message PingRequest {}
 
 message PingResponse {
   string text = 1;
@@ -70,8 +74,8 @@ service Shortener {
   rpc AddShortURL(AddShortURLRequest) returns (AddShortURLResponse);
   rpc AddShortURLs(AddShortURLsRequest) returns (AddShortURLsResponse);
   rpc GetURL(GetURLRequest) returns (GetURLResponse);
-  rpc FetchUserURLs(google.protobuf.Empty) returns (FetchUserURLsResponse);
+  rpc FetchUserURLs(FetchUserURLsRequest) returns (FetchUserURLsResponse);
   rpc DeleteUserURLs(DeleteUserURLsRequest) returns (DeleteUserURLsResponse);
-  rpc FetchStats(google.protobuf.Empty) returns (FetchStatsResponse);
-  rpc Ping(google.protobuf.Empty) returns (PingResponse);
+  rpc FetchStats(FetchStatsRequest) returns (FetchStatsResponse);
+  rpc Ping(PingRequest) returns (PingResponse);
 }

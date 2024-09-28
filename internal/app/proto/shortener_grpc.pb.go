@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -36,10 +35,10 @@ type ShortenerClient interface {
 	AddShortURL(ctx context.Context, in *AddShortURLRequest, opts ...grpc.CallOption) (*AddShortURLResponse, error)
 	AddShortURLs(ctx context.Context, in *AddShortURLsRequest, opts ...grpc.CallOption) (*AddShortURLsResponse, error)
 	GetURL(ctx context.Context, in *GetURLRequest, opts ...grpc.CallOption) (*GetURLResponse, error)
-	FetchUserURLs(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*FetchUserURLsResponse, error)
+	FetchUserURLs(ctx context.Context, in *FetchUserURLsRequest, opts ...grpc.CallOption) (*FetchUserURLsResponse, error)
 	DeleteUserURLs(ctx context.Context, in *DeleteUserURLsRequest, opts ...grpc.CallOption) (*DeleteUserURLsResponse, error)
-	FetchStats(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*FetchStatsResponse, error)
-	Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*PingResponse, error)
+	FetchStats(ctx context.Context, in *FetchStatsRequest, opts ...grpc.CallOption) (*FetchStatsResponse, error)
+	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
 }
 
 type shortenerClient struct {
@@ -80,7 +79,7 @@ func (c *shortenerClient) GetURL(ctx context.Context, in *GetURLRequest, opts ..
 	return out, nil
 }
 
-func (c *shortenerClient) FetchUserURLs(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*FetchUserURLsResponse, error) {
+func (c *shortenerClient) FetchUserURLs(ctx context.Context, in *FetchUserURLsRequest, opts ...grpc.CallOption) (*FetchUserURLsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(FetchUserURLsResponse)
 	err := c.cc.Invoke(ctx, Shortener_FetchUserURLs_FullMethodName, in, out, cOpts...)
@@ -100,7 +99,7 @@ func (c *shortenerClient) DeleteUserURLs(ctx context.Context, in *DeleteUserURLs
 	return out, nil
 }
 
-func (c *shortenerClient) FetchStats(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*FetchStatsResponse, error) {
+func (c *shortenerClient) FetchStats(ctx context.Context, in *FetchStatsRequest, opts ...grpc.CallOption) (*FetchStatsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(FetchStatsResponse)
 	err := c.cc.Invoke(ctx, Shortener_FetchStats_FullMethodName, in, out, cOpts...)
@@ -110,7 +109,7 @@ func (c *shortenerClient) FetchStats(ctx context.Context, in *emptypb.Empty, opt
 	return out, nil
 }
 
-func (c *shortenerClient) Ping(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*PingResponse, error) {
+func (c *shortenerClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(PingResponse)
 	err := c.cc.Invoke(ctx, Shortener_Ping_FullMethodName, in, out, cOpts...)
@@ -127,10 +126,10 @@ type ShortenerServer interface {
 	AddShortURL(context.Context, *AddShortURLRequest) (*AddShortURLResponse, error)
 	AddShortURLs(context.Context, *AddShortURLsRequest) (*AddShortURLsResponse, error)
 	GetURL(context.Context, *GetURLRequest) (*GetURLResponse, error)
-	FetchUserURLs(context.Context, *emptypb.Empty) (*FetchUserURLsResponse, error)
+	FetchUserURLs(context.Context, *FetchUserURLsRequest) (*FetchUserURLsResponse, error)
 	DeleteUserURLs(context.Context, *DeleteUserURLsRequest) (*DeleteUserURLsResponse, error)
-	FetchStats(context.Context, *emptypb.Empty) (*FetchStatsResponse, error)
-	Ping(context.Context, *emptypb.Empty) (*PingResponse, error)
+	FetchStats(context.Context, *FetchStatsRequest) (*FetchStatsResponse, error)
+	Ping(context.Context, *PingRequest) (*PingResponse, error)
 	mustEmbedUnimplementedShortenerServer()
 }
 
@@ -150,16 +149,16 @@ func (UnimplementedShortenerServer) AddShortURLs(context.Context, *AddShortURLsR
 func (UnimplementedShortenerServer) GetURL(context.Context, *GetURLRequest) (*GetURLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetURL not implemented")
 }
-func (UnimplementedShortenerServer) FetchUserURLs(context.Context, *emptypb.Empty) (*FetchUserURLsResponse, error) {
+func (UnimplementedShortenerServer) FetchUserURLs(context.Context, *FetchUserURLsRequest) (*FetchUserURLsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FetchUserURLs not implemented")
 }
 func (UnimplementedShortenerServer) DeleteUserURLs(context.Context, *DeleteUserURLsRequest) (*DeleteUserURLsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteUserURLs not implemented")
 }
-func (UnimplementedShortenerServer) FetchStats(context.Context, *emptypb.Empty) (*FetchStatsResponse, error) {
+func (UnimplementedShortenerServer) FetchStats(context.Context, *FetchStatsRequest) (*FetchStatsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FetchStats not implemented")
 }
-func (UnimplementedShortenerServer) Ping(context.Context, *emptypb.Empty) (*PingResponse, error) {
+func (UnimplementedShortenerServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
 func (UnimplementedShortenerServer) mustEmbedUnimplementedShortenerServer() {}
@@ -238,7 +237,7 @@ func _Shortener_GetURL_Handler(srv interface{}, ctx context.Context, dec func(in
 }
 
 func _Shortener_FetchUserURLs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
+	in := new(FetchUserURLsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -250,7 +249,7 @@ func _Shortener_FetchUserURLs_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: Shortener_FetchUserURLs_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ShortenerServer).FetchUserURLs(ctx, req.(*emptypb.Empty))
+		return srv.(ShortenerServer).FetchUserURLs(ctx, req.(*FetchUserURLsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -274,7 +273,7 @@ func _Shortener_DeleteUserURLs_Handler(srv interface{}, ctx context.Context, dec
 }
 
 func _Shortener_FetchStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
+	in := new(FetchStatsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -286,13 +285,13 @@ func _Shortener_FetchStats_Handler(srv interface{}, ctx context.Context, dec fun
 		FullMethod: Shortener_FetchStats_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ShortenerServer).FetchStats(ctx, req.(*emptypb.Empty))
+		return srv.(ShortenerServer).FetchStats(ctx, req.(*FetchStatsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Shortener_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
+	in := new(PingRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -304,7 +303,7 @@ func _Shortener_Ping_Handler(srv interface{}, ctx context.Context, dec func(inte
 		FullMethod: Shortener_Ping_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ShortenerServer).Ping(ctx, req.(*emptypb.Empty))
+		return srv.(ShortenerServer).Ping(ctx, req.(*PingRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

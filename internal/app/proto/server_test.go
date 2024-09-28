@@ -29,19 +29,19 @@ func TestAuthInterceptor(t *testing.T) {
 	}{
 		{
 			name:     "without auth",
-			method:   "GetURL",
+			method:   "/shortener.Shortener/GetURL",
 			metadata: map[string]string{},
 			wantErr:  false,
 		},
 		{
 			name:     "with auth",
-			method:   "AddShortURL",
+			method:   "/shortener.Shortener/AddShortURL",
 			metadata: map[string]string{"user_id": "12345"},
 			wantErr:  false,
 		},
 		{
 			name:     "without user id",
-			method:   "AddShortURL",
+			method:   "/shortener.Shortener/AddShortURL",
 			metadata: map[string]string{},
 			wantErr:  true,
 		},
