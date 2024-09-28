@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"net"
 	"net/url"
 	"os"
 	"reflect"
@@ -16,8 +17,10 @@ import (
 
 // Settings структура для конфигурирования сервиса.
 type Settings struct {
+	TrustedSubnet   *net.IPNet    `json:"trusted_subnet" env:"TRUSTED_SUBNET" envDefault:""`
 	BaseURL         url.URL       `json:"base_url" env:"BASE_URL" envDefault:"http://localhost:8080"`
 	RunAddr         string        `json:"server_address" env:"SERVER_ADDRESS" envDefault:"localhost:8080"`
+	RunGAddr        string        `json:"gserver_address" env:"GSERVER_ADDRESS" envDefault:"localhost:3200"`
 	FileStoragePath string        `json:"file_storage_path" env:"FILE_STORAGE_PATH" envDefault:"/tmp/url-db.json"`
 	DatabaseDSN     string        `json:"database_dsn" env:"DATABASE_DSN" envDefault:""`
 	SecretKey       string        `json:"secret_key" env:"SECRET_KEY" envDefault:"1234567890"`
@@ -36,10 +39,10 @@ func init() {
 }
 
 // Setup функция считывания и применения пользовательских настроек сервиса.
-func Setup() error {
+func Setup(withFlags bool) error {
 	configData, presentData, err := getConfigData()
 	if err != nil {
-		return fmt.Errorf("failed to parse config: %w", err)
+		return fmt.Errorf("failed to get config: %w", err)
 	}
 	if presentData {
 		if err := parseConfigData(configData); err != nil {
@@ -51,7 +54,9 @@ func Setup() error {
 		return fmt.Errorf("failed to parse envs: %w", err)
 	}
 
-	Params.parseFlags()
+	if withFlags {
+		Params.parseFlags()
+	}
 
 	return nil
 }
@@ -82,12 +87,14 @@ func parseConfigData(data []byte) error {
 	config := struct {
 		BaseURL         string `json:"base_url" env:"BASE_URL"`
 		RunAddr         string `json:"server_address" env:"SERVER_ADDRESS"`
+		RunGAddr        string `json:"c" env:"GSERVER_ADDRESS"`
 		FileStoragePath string `json:"file_storage_path" env:"FILE_STORAGE_PATH"`
 		DatabaseDSN     string `json:"database_dsn" env:"DATABASE_DSN"`
 		SecretKey       string `json:"secret_key" env:"SECRET_KEY"`
 		DropURLsPeriod  string `json:"drop_urls_period" env:"DROP_URLS_PERIOD"`
 		LogLevel        string `json:"log_level" env:"LOG_LEVEL"`
 		EnableHTTPS     string `json:"enable_https" env:"ENABLE_HTTPS"`
+		TrustedSubnet   string `json:"trusted_subnet" env:"TRUSTED_SUBNET"`
 	}{}
 
 	err := json.Unmarshal(data, &config)
@@ -114,7 +121,20 @@ func parseConfigData(data []byte) error {
 }
 
 func (s *Settings) parseEnv() error {
-	err := env.Parse(s)
+	err := env.ParseWithOptions(s, env.Options{
+		FuncMap: map[reflect.Type]env.ParserFunc{
+			reflect.TypeOf(net.IPNet{}): func(v string) (interface{}, error) {
+				if v == "" {
+					return nil, nil //nolint:nilnil // Контроллируемое поведение
+				}
+				_, net, err := net.ParseCIDR(v)
+				if err != nil {
+					return nil, fmt.Errorf("parse trusted subnet env error: %w", err)
+				}
+				return *net, nil
+			},
+		},
+	})
 	if err != nil {
 		return fmt.Errorf("env error: %w", err)
 	}
@@ -124,6 +144,7 @@ func (s *Settings) parseEnv() error {
 
 func (s *Settings) parseFlags() {
 	flag.StringVar(&s.RunAddr, "a", s.RunAddr, "address and port to run server")
+	flag.StringVar(&s.RunGAddr, "g", s.RunGAddr, "address and port to run grpc server")
 	flag.Func("b", `address and port to urls (default "http://localhost:8080")`, func(v string) error {
 		parsedBaseURL, err := url.Parse(v)
 		if err != nil {
@@ -141,6 +162,19 @@ func (s *Settings) parseFlags() {
 		}
 
 		s.LogLevel = lev
+		return nil
+	})
+	flag.Func("t", `trusted subnet for service data (default "")`, func(v string) error {
+		if v == "" {
+			return nil
+		}
+
+		_, subnet, err := net.ParseCIDR(v)
+		if err != nil {
+			return fmt.Errorf("parse trusted subnet error: %w", err)
+		}
+
+		s.TrustedSubnet = subnet
 		return nil
 	})
 

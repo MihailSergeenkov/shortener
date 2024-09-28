@@ -43,6 +43,10 @@ func (s *MockStorage) DropDeletedURLs(_ context.Context) error {
 	return nil
 }
 
+func (s *MockStorage) FetchStats(_ context.Context) (int, int, error) {
+	return 0, 0, nil
+}
+
 func (s *MockStorage) Ping(_ context.Context) error {
 	return nil
 }

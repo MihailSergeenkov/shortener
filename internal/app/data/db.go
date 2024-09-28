@@ -220,6 +220,23 @@ func (s *DBStorage) DropDeletedURLs(ctx context.Context) error {
 	return nil
 }
 
+// FetchStats получает статистические данные.
+func (s *DBStorage) FetchStats(ctx context.Context) (int, int, error) {
+	const queryStmt = `SELECT count(*), count(DISTINCT user_id) FROM urls`
+
+	row := s.pool.QueryRow(ctx, queryStmt)
+
+	var urlsCount int
+	var usersCount int
+
+	err := row.Scan(&urlsCount, &usersCount)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to scan a response row: %w", err)
+	}
+
+	return urlsCount, usersCount, nil
+}
+
 // Ping проверяет работоспособность БД.
 func (s *DBStorage) Ping(ctx context.Context) error {
 	if err := s.pool.Ping(ctx); err != nil {

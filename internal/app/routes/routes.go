@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/MihailSergeenkov/shortener/internal/app/common"
+	"github.com/MihailSergeenkov/shortener/internal/app/config"
 	"github.com/MihailSergeenkov/shortener/internal/app/data"
 	"github.com/MihailSergeenkov/shortener/internal/app/handlers"
 )
@@ -43,6 +44,12 @@ func NewRouter(l *zap.Logger, s data.Storager) chi.Router {
 			r.Get("/", handlers.APIFetchUserURLsHandler(l, s))
 			r.Delete("/", handlers.APIDeleteUserURLsHandler(l, s))
 		})
+	})
+
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.AllowContentType(common.JSONContentType), checkSubnetMiddleware(l, config.Params.TrustedSubnet))
+
+		r.Get("/api/internal/stats", handlers.APIFetchStatsHandler(l, s))
 	})
 
 	return r

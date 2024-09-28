@@ -333,6 +333,63 @@ func TestFileDropDeletedURLs(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestFileFetchStats(t *testing.T) {
+	ctx := context.Background()
+
+	type want struct {
+		urls  int
+		users int
+	}
+	tests := []struct {
+		name    string
+		storage *FileStorage
+		want    want
+	}{
+		{
+			name: "success fetch",
+			storage: &FileStorage{
+				baseStorage: BaseStorage{
+					urls: map[string]models.URL{
+						"short_url": {
+							ShortURL:    "short_url",
+							OriginalURL: "some_url",
+							UserID:      "1",
+						},
+						"short_url_2": {
+							ShortURL:    "short_url_2",
+							OriginalURL: "some_url",
+							UserID:      "1",
+						},
+					},
+				},
+			},
+			want: want{
+				urls:  2,
+				users: 1,
+			},
+		},
+		{
+			name: "short url not found",
+			storage: &FileStorage{
+				baseStorage: *NewBaseStorage(),
+			},
+			want: want{
+				urls:  0,
+				users: 0,
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			urls, users, err := test.storage.FetchStats(ctx)
+
+			require.NoError(t, err)
+			assert.Equal(t, test.want.urls, urls)
+			assert.Equal(t, test.want.users, users)
+		})
+	}
+}
+
 func TestFilePing(t *testing.T) {
 	storage := FileStorage{}
 	ctx := context.Background()
