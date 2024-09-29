@@ -183,6 +183,13 @@ func TestParseEnv(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "invalid trusted subnet env",
+			setEnv: func() {
+				require.NoError(t, os.Setenv("TRUSTED_SUBNET", "some string"))
+			},
+			wantErr: true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
